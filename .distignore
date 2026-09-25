@@ -1,0 +1,10 @@
+.git/
+.github/
+.gitignore
+.distignore
+
+*.md
+*.zip
+
+.DS_Store
+Thumbs.db
