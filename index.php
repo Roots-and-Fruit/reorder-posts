@@ -1,11 +1,13 @@
 <?php
 /*
 Plugin Name: Reorder Posts
-Plugin URI: https://wordpress.org/plugins/metronet-reorder-posts/
+Plugin URI: https://mattc.link/reorder-posts
 Description: Easily reorder posts and pages in WordPress
 Version: 2.6.1
-Author: Ryan Hellyer, Ronald Huereca, Scott Basgaard
-Author URI: https://github.com/ronalfy/reorder-posts
+Requires at least: 6.5
+Requires PHP: 7.2
+Author: Roots & Fruit
+Author URI: https://mattc.link/reorder-posts
 Text Domain: metronet-reorder-posts
 Domain Path: /languages
 

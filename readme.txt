@@ -1,6 +1,6 @@
 === Reorder Posts - Quick Post Type and Page Ordering ===
-Contributors: ronalfy, ryanhellyer, scottbasgaard
-Author URI: https://github.com/ronalfy/reorder-posts
+Contributors: webdevmattcrom
+Author URI: https://mattc.link/reorder-posts
 Plugin URL: https://wordpress.org/plugins/metronet-reorder-posts/
 Requires at Least: 6.5
 Tested up to: 7.0
