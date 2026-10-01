@@ -1,0 +1,50 @@
+title: "[Who] can …"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write this as a product change. Two sentences up front: what is true today, then what will be true when this is done.
+  - type: textarea
+    id: tldr
+    attributes:
+      label: TL;DR
+      description: Start the first sentence with "Currently," and the second with "By addressing this issue,".
+      placeholder: Currently, the reorder screen lists only published posts. By addressing this issue, drafts and private posts can be placed in the order before they are published.
+    validations:
+      required: true
+  - type: textarea
+    id: who
+    attributes:
+      label: Who this is for
+      description: Name the person and the moment they are in.
+    validations:
+      required: true
+  - type: textarea
+    id: experience
+    attributes:
+      label: How this impacts the product experience
+      description: The screen, row, or control a person would notice.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: What Done looks like
+      description: The check that closes this, including what this will not change.
+    validations:
+      required: true
+  - type: textarea
+    id: urgency
+    attributes:
+      label: Urgency
+      description: Why this is ahead of other requests, or say it can wait.
+    validations:
+      required: false
+  - type: textarea
+    id: technical
+    attributes:
+      label: How to solve this technically
+      description: Current behavior, the change, the likely surface, and what is out of scope. Not a patch.
+    validations:
+      required: false
