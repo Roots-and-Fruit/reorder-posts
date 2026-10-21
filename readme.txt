@@ -5,7 +5,7 @@ Plugin URL: https://wordpress.org/plugins/metronet-reorder-posts/
 Requires at Least: 6.5
 Tested up to: 7.1
 Tags: reorder, reorder posts, menu order, ordering, re-order
-Stable tag: 2.6.1
+Stable tag: 2.6.2
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -157,6 +157,10 @@ You can open a support request on WordPress.org or submit an issue on GitHub.
 
 == Changelog ==
 
+= 2.6.2 =
+* Released 2026-09-28
+* Settings are grouped into tabs. Existing labels and saved values are unchanged. Add-on sections get a tab when they are active.
+
 = 2.6.1 =
 * Released 2026-05-02
 * Fix: Resolving PHP error notices for undefined indexes when saving admin settings.
@@ -289,6 +293,9 @@ You can open a support request on WordPress.org or submit an issue on GitHub.
 * Initial plugin release
 
 == Upgrade Notice ==
+
+= 2.6.2 =
+Settings are grouped into tabs. Your saved settings are unchanged.
 
 = 2.6.1 =
 Fix: resolving undefined array indexes when saving admin settings.
