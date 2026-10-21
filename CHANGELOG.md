@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reorder screens use the same layout as Settings. Folder tabs show only when Reorder by Term or Reorder Terms adds one for that post type.
 
+### Fixed
+
+- Dragging a title on a tablet selects the text instead of moving the row. Drag from the grip. Add-on reorder lists get the same grip.
+
 ## [2.6.2] - 2026-09-28
 
 ### Changed

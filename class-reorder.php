@@ -339,7 +339,7 @@ final class MN_Reorder {
 	 */
 	public function print_styles() {
 		MN_Reorder_Admin::get_instance()->enqueue_screen_assets();
-		wp_enqueue_style( 'reorderpages_style', REORDER_URL . '/css/admin.css', array( 'metronet-reorder-posts-settings' ), '20160813' );
+		wp_enqueue_style( 'reorderpages_style', REORDER_URL . '/css/admin.css', array( 'metronet-reorder-posts-settings' ), '20261021.2' );
 	}
 
 	/**
@@ -354,7 +354,7 @@ final class MN_Reorder {
 		wp_enqueue_script( 'jquery-ui-touch-punch', REORDER_URL . '/scripts/jquery.ui.touch-punch.js', array( 'jquery-ui-sortable' ), '0.2.3', true );
 		wp_register_script( 'reorder_nested', REORDER_URL . '/scripts/jquery.mjs.nestedSortable.js', array( 'jquery-ui-touch-punch' ), '2.0.1', true );
 
-		wp_enqueue_script( 'reorder_posts', REORDER_URL . '/scripts/sort.js', array( 'reorder_nested' ), '20210214', true );
+		wp_enqueue_script( 'reorder_posts', REORDER_URL . '/scripts/sort.js', array( 'reorder_nested' ), '20261021', true );
 		wp_localize_script(
 			'reorder_posts',
 			'reorder_posts',
@@ -542,6 +542,13 @@ if( ! empty( \$posts ) ) {
 		endif;
 	}
 
+	/**
+	 * Grip that starts a drag. The title stays selectable as text.
+	 */
+	private function drag_handle() {
+		echo '<span class="mn-reorder-handle" aria-hidden="true"><span class="mn-reorder-handle__dots"></span></span>';
+	}
+
 	private function output_row( $post ) {
 		global $post;
 		setup_postdata( $post );
@@ -566,6 +573,7 @@ if( ! empty( \$posts ) ) {
 						<span class="dashicons dashicons-arrow-right"></span>
 					</div><!-- .row-action -->
 					<div class="row-content">
+						<?php $this->drag_handle(); ?>
 						<?php the_title(); ?><?php echo ( defined( 'REORDER_DEBUG' ) && REORDER_DEBUG == true ) ? ' - Menu Order:' . absint( $post->menu_order ) : ''; ?>
 					</div><!-- .row-content -->
 				</div><!-- .row -->
@@ -585,6 +593,7 @@ if( ! empty( \$posts ) ) {
 					}
 					?>
 					<div class="row-content <?php echo $is_hierarchical ? '' : 'non-hierarchical'; ?>">
+						<?php $this->drag_handle(); ?>
 						<?php the_title(); ?><?php echo ( defined( 'REORDER_DEBUG' ) && REORDER_DEBUG == true ) ? ' - Menu Order:' . absint( $post->menu_order ) : ''; ?>
 					</div><!-- .row-content -->
 				</div><!-- .row -->
