@@ -59,6 +59,7 @@ class MN_Reorder_Admin {
 		//Admin Settings
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'init_admin_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_settings_styles' ) );
 
 		//Plugin settings
 		add_filter( 'plugin_action_links_' . REORDER_BASENAME, array( $this, 'add_settings_link' ) );
@@ -209,10 +210,8 @@ class MN_Reorder_Admin {
 			//Get post type labels for checkbox
 			$post_type_value  = isset( $settings_post_types[ $post_type_name ] ) ? $settings_post_types[ $post_type_name ] : 'off';
 			$post_type_label  = isset( $post_type->label ) ? $post_type->label : $post_type_name;
-			$checked          = '';
 			$post_type_action = '';
-			if ( $post_type_value === 'on' ) {
-				$checked = checked( true, true, false );
+			if ( 'on' === $post_type_value ) {
 
 				// Get edit path for post type.
 				$edit_path = 'edit.php?post_type=' . $post_type_name;
@@ -241,7 +240,21 @@ class MN_Reorder_Admin {
 			}
 
 			//Output post type option
-			printf( '<div><input type="hidden" name="metronet-reorder-posts[post_types][%1$s]" value="off" /> <input type="checkbox" name="metronet-reorder-posts[post_types][%1$s]" id="post_type_%1$s" value="on" %2$s /><label for="post_type_%1$s">&nbsp;%3$s</label>%4$s</div>', esc_attr( $post_type_name ), $checked, esc_html( $post_type_label ), wp_kses_post( $post_type_action ) );
+			echo '<div class="mn-rf-type">';
+			printf( '<input type="hidden" name="metronet-reorder-posts[post_types][%1$s]" value="off" />', esc_attr( $post_type_name ) );
+			$this->render_toggle(
+				array(
+					'name'    => 'metronet-reorder-posts[post_types][' . $post_type_name . ']',
+					'value'   => 'on',
+					'checked' => 'on' === $post_type_value,
+					'id'      => 'post_type_' . $post_type_name,
+					'note'    => $post_type_label,
+				)
+			);
+			if ( $post_type_action ) {
+				echo wp_kses_post( $post_type_action );
+			}
+			echo '</div>';
 		}
 	}
 
@@ -454,15 +467,208 @@ class MN_Reorder_Admin {
 	 * @see add_admin_menu
 	 *
 	 */
+	/**
+	 * Settings screen styles.
+	 *
+	 * @param string $hook_suffix Current admin page.
+	 */
+	public function enqueue_settings_styles( $hook_suffix ) {
+		if ( 'settings_page_metronet-reorder-posts' !== $hook_suffix ) {
+			return;
+		}
+		wp_enqueue_style( 'metronet-reorder-posts-settings', REORDER_URL . '/css/settings.css', array(), '2.6.2.6' );
+		wp_enqueue_script( 'metronet-reorder-posts-settings', REORDER_URL . '/scripts/settings.js', array(), '2.6.2.5', true );
+	}
+
+	/**
+	 * On and off labels for a switch.
+	 *
+	 * @return array{enabled:string,disabled:string}
+	 */
+	private function toggle_labels() {
+		return array(
+			/* translators: Visible state of an on/off switch. */
+			'enabled'  => _x( 'Enabled', 'toggle state', 'metronet-reorder-posts' ),
+			/* translators: Visible state of an on/off switch. */
+			'disabled' => _x( 'Disabled', 'toggle state', 'metronet-reorder-posts' ),
+		);
+	}
+
+	/**
+	 * A checkbox drawn as a switch, with Enabled or Disabled beside it.
+	 *
+	 * @param array $args name, value, checked, id, note.
+	 */
+	private function render_toggle( $args ) {
+		$id      = $args['id'];
+		$note_id = $id . '-note';
+		$state   = $id . '-state';
+		$labels  = $this->toggle_labels();
+		$checked = ! empty( $args['checked'] );
+
+		echo '<label class="mn-rf-toggle">';
+		printf(
+			'<input class="mn-rf-toggle__input" type="checkbox" name="%1$s" id="%2$s" value="%3$s" aria-labelledby="%4$s %5$s" %6$s />',
+			esc_attr( $args['name'] ),
+			esc_attr( $id ),
+			esc_attr( $args['value'] ),
+			esc_attr( $note_id ),
+			esc_attr( $state ),
+			checked( $checked, true, false )
+		);
+		echo '<span class="mn-rf-toggle__track" aria-hidden="true"></span>';
+		printf(
+			'<span class="mn-rf-toggle__state" id="%1$s" data-enabled="%2$s" data-disabled="%3$s">%4$s</span>',
+			esc_attr( $state ),
+			esc_attr( $labels['enabled'] ),
+			esc_attr( $labels['disabled'] ),
+			esc_html( $checked ? $labels['enabled'] : $labels['disabled'] )
+		);
+		printf( '<span class="mn-rf-toggle__note" id="%1$s">%2$s</span>', esc_attr( $note_id ), esc_html( $args['note'] ) );
+		echo '</label>';
+	}
+
+	/**
+	 * Slanted right edge of a folder tab.
+	 */
+	private function tab_shoulder() {
+		return '<svg class="rf-tabs__shoulder" viewBox="0 0 48 40" width="48" height="40" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="rf-tabs__shoulder-face" d="M0 0H20Q26 0 30 8L46 40H0Z" /><path class="rf-tabs__shoulder-edge" d="M0 .5H20Q26 .5 30 8.5L46 40" /></svg>';
+	}
+
+	/**
+	 * Sticky bar and the about card opened from the logo.
+	 */
+	/**
+	 * Small arrow that marks a link opening in a new tab.
+	 */
+	private function external_icon() {
+		return '<svg class="mn-rf-external__icon" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M4.2 2.2H2.4A1.2 1.2 0 0 0 1.2 3.4v6.2A1.2 1.2 0 0 0 2.4 10.8h6.2a1.2 1.2 0 0 0 1.2-1.2V7.8M6.4 1.2h4.4V5.6M10.6 1.4 5.2 6.8"/></svg>';
+	}
+
+	/**
+	 * Footer or about link that leaves wp-admin.
+	 *
+	 * @param string $url   Destination.
+	 * @param string $label Visible text.
+	 * @param string $class Optional class names.
+	 */
+	private function external_link( $url, $label, $class = '' ) {
+		$class_attr = '' !== $class ? ' class="' . esc_attr( $class ) . '"' : '';
+		echo '<a' . $class_attr . ' href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">';
+		echo esc_html( $label );
+		echo $this->external_icon(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG.
+		echo '<span class="screen-reader-text">' . esc_html__( '(opens in a new tab)', 'metronet-reorder-posts' ) . '</span>';
+		echo '</a>';
+	}
+
+	private function render_footer() {
+		echo '<footer class="mn-rf-footer">';
+		$this->external_link( 'https://mattc.link/reorder-posts-rating', __( 'Like Reorder Posts? Give us a 5-★ Rating Here', 'metronet-reorder-posts' ), 'mn-rf-footer__rate' );
+		echo '<nav class="mn-rf-footer__links" aria-label="' . esc_attr__( 'Plugin links', 'metronet-reorder-posts' ) . '">';
+		$this->external_link( 'https://mattc.link/reorder-posts-docs', __( 'Docs', 'metronet-reorder-posts' ) );
+		$this->external_link( 'https://mattc.link/reorder-posts-feedback', __( 'Feedback', 'metronet-reorder-posts' ) );
+		$this->external_link( 'https://mattc.link/reorder-posts-support', __( 'Support', 'metronet-reorder-posts' ) );
+		echo '</nav>';
+		echo '<button type="button" class="mn-rf-footer__brand" aria-expanded="false" aria-controls="mn-rf-about">';
+		echo '<img src="' . esc_url( REORDER_URL . '/images/rf-logo.svg' ) . '" alt="' . esc_attr__( 'Roots and Fruit', 'metronet-reorder-posts' ) . '" width="120" height="53" />';
+		echo '</button>';
+		echo '</footer>';
+
+		echo '<aside id="mn-rf-about" class="mn-rf-about" hidden>';
+		echo '<p class="mn-rf-about__hello"><strong>' . esc_html__( 'Hi, I’m Matt!', 'metronet-reorder-posts' ) . '</strong>';
+		echo '<span>' . esc_html__( 'But most folks call me Cromwell.', 'metronet-reorder-posts' ) . '</span></p>';
+		echo '<p>' . esc_html__( 'Roots & Fruit is my digital product practice for solopreneurs and product teams: sustainable growth focused on CX and Marketing driven ROI.', 'metronet-reorder-posts' ) . '</p>';
+		echo '<h2 class="mn-rf-about__heading">' . esc_html__( 'About Reorder Posts', 'metronet-reorder-posts' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Reorder Posts is a simple plugin for putting posts, pages, and custom post types in the order you want. It has three Core User Commitments:', 'metronet-reorder-posts' ) . '</p>';
+		echo '<ol class="mn-rf-about__list">';
+		echo '<li>' . esc_html__( 'Drag and drop saves immediately.', 'metronet-reorder-posts' ) . '</li>';
+		echo '<li>' . esc_html__( 'Order is stored in WordPress menu order.', 'metronet-reorder-posts' ) . '</li>';
+		echo '<li>' . esc_html__( 'Front-end auto-sorting stays off until you turn it on.', 'metronet-reorder-posts' ) . '</li>';
+		echo '</ol>';
+		echo '<p>' . esc_html__( 'I’m always available to chat.', 'metronet-reorder-posts' ) . ' ';
+		$this->external_link( 'https://mattc.link/reorder-posts-feedback', __( 'Here’s my comment form.', 'metronet-reorder-posts' ) );
+		echo '</p>';
+		echo '<div class="mn-rf-about__person">';
+		echo '<img class="mn-rf-about__photo" src="' . esc_url( REORDER_URL . '/images/matt-cromwell.jpg' ) . '" alt="" width="64" height="64" />';
+		echo '<p class="mn-rf-about__id"><strong>' . esc_html__( 'Matt Cromwell', 'metronet-reorder-posts' ) . '</strong>';
+		echo '<span>' . esc_html__( 'Founder and CGO at Roots and Fruit', 'metronet-reorder-posts' ) . '</span></p>';
+		echo '</div></aside>';
+	}
+
+	/**
+	 * Settings screen.
+	 *
+	 * One tab per registered section, including sections added by add-ons.
+	 * Every section stays in the form so a save on one tab still submits the others.
+	 */
 	public function options_page() {
+		global $wp_settings_sections, $wp_settings_fields;
+
+		$page     = 'metronet-reorder-posts';
+		$sections = isset( $wp_settings_sections[ $page ] ) ? $wp_settings_sections[ $page ] : array();
+		$tab      = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$ids      = array_keys( $sections );
+		if ( ! in_array( $tab, $ids, true ) ) {
+			$tab = $ids ? $ids[0] : '';
+		}
+		$title = _x( 'Reorder Posts', 'Plugin Name - Settings Page Title', 'metronet-reorder-posts' );
 		?>
-		<div class="wrap">
-			<h2><?php echo esc_html( _x( 'Reorder Posts', 'Plugin Name - Settings Page Title', 'metronet-reorder-posts' ) ); ?></h2>
-			<form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="POST">
-				<?php settings_fields( 'metronet-reorder-posts' ); ?>
-				<?php do_settings_sections( 'metronet-reorder-posts' ); ?>
-				<?php submit_button(); ?>
-			</form>
+		<div class="wrap mn-rf-settings">
+			<header class="mn-rf-settings__header">
+				<h1 class="mn-rf-settings__title"><?php echo esc_html( $title ); ?></h1>
+				<p class="mn-rf-settings__lede"><?php esc_html_e( 'Quickly reorder posts, pages, and custom post types using an intuitive drag-and-drop interface. Reordering supports auto-sorting and nested pages.', 'metronet-reorder-posts' ); ?></p>
+			</header>
+			<hr class="wp-header-end" />
+			<div class="mn-rf-settings__body">
+				<form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
+					<?php settings_fields( $page ); ?>
+					<?php if ( $sections ) : ?>
+						<div class="rf-tabs">
+							<nav class="rf-tabs__list" aria-label="<?php echo esc_attr( $title ); ?>">
+								<?php foreach ( $sections as $id => $section ) : ?>
+									<?php
+									$url    = add_query_arg(
+										array(
+											'page' => $page,
+											'tab'  => $id,
+										),
+										admin_url( 'options-general.php' )
+									);
+									$label  = ! empty( $section['title'] ) ? $section['title'] : $id;
+									$active = $tab === $id;
+									?>
+									<a href="<?php echo esc_url( $url ); ?>" class="rf-tabs__tab<?php echo $active ? ' is-current' : ''; ?>"<?php echo $active ? ' aria-current="page"' : ''; ?>>
+										<span class="rf-tabs__dot" aria-hidden="true"></span>
+										<?php echo esc_html( $label ); ?>
+										<?php echo $this->tab_shoulder(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG markup. ?>
+									</a>
+								<?php endforeach; ?>
+							</nav>
+							<div class="rf-tabs__panel">
+								<?php foreach ( $sections as $id => $section ) : ?>
+									<div class="mn-rf-settings__panel"<?php echo $tab === $id ? '' : ' hidden'; ?>>
+										<?php if ( ! empty( $section['title'] ) ) : ?>
+											<h2><?php echo esc_html( $section['title'] ); ?></h2>
+										<?php endif; ?>
+										<?php
+										if ( ! empty( $section['callback'] ) ) {
+											call_user_func( $section['callback'], $section );
+										}
+										if ( ! empty( $wp_settings_fields[ $page ][ $id ] ) ) {
+											echo '<table class="form-table" role="presentation">';
+											do_settings_fields( $page, $id );
+											echo '</table>';
+										}
+										?>
+									</div>
+								<?php endforeach; ?>
+								<?php submit_button(); ?>
+							</div>
+						</div>
+					<?php endif; ?>
+				</form>
+			</div>
+			<?php $this->render_footer(); ?>
 		</div>
 		<?php
 	}

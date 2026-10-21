@@ -39,7 +39,7 @@ jobs:
             echo "release=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Read the changelog for this version
+      - name: Extract changelog for this version
         id: changelog
         if: steps.version.outputs.release == 'true'
         shell: bash
@@ -48,38 +48,12 @@ jobs:
         run: |
           set -euo pipefail
           NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
-          BODY_FILE="${RUNNER_TEMP}/release-body.md"
-          awk -v ver="$RELEASE_VERSION" '
-            {
-              line=$0
-              gsub(/\r/, "", line)
-              t=line
-              gsub(/^[ \t]+|[ \t]+$/, "", t)
-            }
-            t ~ /^== / {
-              if (found) exit
-              next
-            }
-            t == "= " ver " =" {
-              found=1
-              next
-            }
-            found && t ~ /^= / { exit }
-            found {
-              sub(/^\* /, "- ", line)
-              print line
-            }
-            END { if (!found) exit 2 }
-          ' readme.txt > "$BODY_FILE"
-          if ! grep -q '[^[:space:]]' "$BODY_FILE"; then
-            echo "readme.txt has no changelog entries for ${RELEASE_VERSION}."
-            exit 1
-          fi
-          {
-            echo "## Changes in v${RELEASE_VERSION}"
-            echo
-            cat "$BODY_FILE"
-          } > "$NOTES_FILE"
+          node .github/scripts/extract-release-notes.mjs \
+            --version "$RELEASE_VERSION" \
+            --out "$NOTES_FILE"
+          echo "===== GitHub release notes ====="
+          cat "$NOTES_FILE"
+          echo "================================"
           echo "notes_file=${NOTES_FILE}" >> "$GITHUB_OUTPUT"
 
       - name: Create ZIP package
