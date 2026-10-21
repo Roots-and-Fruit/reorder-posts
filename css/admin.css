@@ -1,6 +1,9 @@
 #post-list {
 	margin-top: 20px;
 	border: 1px solid #e5e5e5;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
 }
 #post-list div {
 	
@@ -55,12 +58,40 @@
 	border-color: #c0c0c0;
 }
 .row-content {
-	padding: 10px 0;
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	min-height: 44px;
+	padding: 0 12px 0 0;
 	font-weight: 700;
-	cursor: move;
+	cursor: default;
 }
 .row-content:hover {
 	background: #FBFBFB;
+}
+.mn-reorder-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	align-self: stretch;
+	flex: 0 0 44px;
+	width: 44px;
+	min-height: 44px;
+	cursor: grab;
+	touch-action: none;
+}
+.mn-reorder-handle__dots {
+	display: block;
+	width: 10px;
+	height: 16px;
+	background-image: radial-gradient(circle, #8c8f94 1.15px, transparent 1.2px);
+	background-position: 0 0;
+	background-size: 5px 5px;
+	pointer-events: none;
+}
+body.mn-reorder-dragging,
+body.mn-reorder-dragging * {
+	cursor: grabbing !important;
 }
 .ui-sortable-placeholder {
 	border-radius: 0 !important;

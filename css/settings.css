@@ -329,6 +329,25 @@
 	display: none !important;
 }
 
+.mn-rf-settings #post-list {
+	margin-top: 0;
+	border-color: var(--rf-rule);
+	border-radius: var(--rf-radius-sm);
+}
+
+.mn-rf-settings .rf-tabs__panel h3 {
+	margin: 1.5rem 0 0.5rem;
+	color: var(--rf-ink-deep);
+	font-family: var(--rf-font-serif);
+	font-size: var(--rf-text-md);
+	font-weight: 600;
+	line-height: var(--rf-leading-snug);
+}
+
+.mn-rf-settings .rf-tabs__panel > h3:first-child {
+	margin-top: 0;
+}
+
 .mn-rf-settings__card {
 	margin-bottom: 1.5rem;
 	padding: 20px;

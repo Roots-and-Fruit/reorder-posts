@@ -8,9 +8,17 @@ jQuery(document).ready(function ($) {
 	var callback = false;
 	var sort_start = {};
 	var sort_end = {};
+	// Add-on screens print their own rows. Give each row a grip before sort starts.
+	postList.find('.row-content').each(function () {
+		if (!$(this).children('.mn-reorder-handle').length) {
+			$(this).prepend(
+				'<span class="mn-reorder-handle" aria-hidden="true"><span class="mn-reorder-handle__dots"></span></span>'
+			);
+		}
+	});
 	postList.nestedSortable({
 		forcePlaceholderSize: true,
-		handle: 'div',
+		handle: '.mn-reorder-handle',
 		helper: 'clone',
 		items: 'li',
 		maxLevels: max_levels,
@@ -115,9 +123,13 @@ jQuery(document).ready(function ($) {
 			$.post(ajaxurl, parent_ajax_args, reorder_ajax_callback);
 		},
 		start: function (event, ui) {
+			$('body').addClass('mn-reorder-dragging');
 			sort_start.item = ui.item;
 			sort_start.prev = ui.item.prev(':not(".placeholder")');
 			sort_start.next = ui.item.next(':not(".placeholder")');
+		},
+		stop: function () {
+			$('body').removeClass('mn-reorder-dragging');
 		},
 	});
 
