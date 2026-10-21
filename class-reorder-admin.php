@@ -476,7 +476,14 @@ class MN_Reorder_Admin {
 		if ( 'settings_page_metronet-reorder-posts' !== $hook_suffix ) {
 			return;
 		}
-		wp_enqueue_style( 'metronet-reorder-posts-settings', REORDER_URL . '/css/settings.css', array(), '2.6.2.6' );
+		$this->enqueue_screen_assets();
+	}
+
+	/**
+	 * Styles and script shared by Settings and the reorder screens.
+	 */
+	public function enqueue_screen_assets() {
+		wp_enqueue_style( 'metronet-reorder-posts-settings', REORDER_URL . '/css/settings.css', array(), '2.6.2.7' );
 		wp_enqueue_script( 'metronet-reorder-posts-settings', REORDER_URL . '/scripts/settings.js', array(), '2.6.2.5', true );
 	}
 
@@ -531,7 +538,7 @@ class MN_Reorder_Admin {
 	/**
 	 * Slanted right edge of a folder tab.
 	 */
-	private function tab_shoulder() {
+	public function tab_shoulder() {
 		return '<svg class="rf-tabs__shoulder" viewBox="0 0 48 40" width="48" height="40" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="rf-tabs__shoulder-face" d="M0 0H20Q26 0 30 8L46 40H0Z" /><path class="rf-tabs__shoulder-edge" d="M0 .5H20Q26 .5 30 8.5L46 40" /></svg>';
 	}
 
@@ -561,7 +568,7 @@ class MN_Reorder_Admin {
 		echo '</a>';
 	}
 
-	private function render_footer() {
+	public function render_footer() {
 		echo '<footer class="mn-rf-footer">';
 		$this->external_link( 'https://mattc.link/reorder-posts-rating', __( 'Like Reorder Posts? Give us a 5-★ Rating Here', 'metronet-reorder-posts' ), 'mn-rf-footer__rate' );
 		echo '<nav class="mn-rf-footer__links" aria-label="' . esc_attr__( 'Plugin links', 'metronet-reorder-posts' ) . '">';

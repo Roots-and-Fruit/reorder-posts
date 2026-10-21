@@ -338,7 +338,8 @@ final class MN_Reorder {
 	 * @global string $pagenow Used internally by WordPress to designate what the current page is in the admin panel
 	 */
 	public function print_styles() {
-		wp_enqueue_style( 'reorderpages_style', REORDER_URL . '/css/admin.css', array(), '20160813' );
+		MN_Reorder_Admin::get_instance()->enqueue_screen_assets();
+		wp_enqueue_style( 'reorderpages_style', REORDER_URL . '/css/admin.css', array( 'metronet-reorder-posts-settings' ), '20160813' );
 	}
 
 	/**
@@ -459,7 +460,6 @@ final class MN_Reorder {
 	 * @global string $post_type
 	 */
 	public function output_interface() {
-		echo '<br />';
 		$post_count_obj = wp_count_posts( $this->post_type );
 		$post_count     = isset( $post_count_obj->{$this->post_status} ) ? absint( $post_count_obj->{$this->post_status} ) : absint( $post_count_obj['publish'] );
 		if ( $post_count >= 1000 ) {
@@ -542,14 +542,6 @@ if( ! empty( \$posts ) ) {
 		endif;
 	}
 
-	/**
-	* Post Row Output
-	*
-	* @author Ronald Huereca <ronalfy@gmail.com>
-	* @since Reorder 2.1.0
-	* @access private
-	* @param stdclass $post object to post
-	*/
 	private function output_row( $post ) {
 		global $post;
 		setup_postdata( $post );
@@ -622,52 +614,79 @@ if( ! empty( \$posts ) ) {
 	 * @global string $post_type
 	 */
 	public function sort_posts() {
-		//Dev note - Settings API not used here because there are no options to save.
-		?>
-		<div class="wrap">
-			<h2>
-				<?php echo esc_html( $this->heading ); ?>
-			</h2>
-			<?php
-			$tabs       =
+		// Dev note - Settings API not used here because there are no options to save.
+		$tabs = array(
 			array(
-				array(
-					'url'    => $this->reorder_page, /* URL to the tab */
-					'label'  => $this->heading,
-					'get'    => 'main', /*$_GET variable*/
-					'action' => 'metronet_reorder_posts_interface_' . $this->post_type, /* action variable in do_action */
-				),
-			);
-			$tabs       = apply_filters( 'metronet_reorder_posts_tabs_' . $this->post_type, (array) $tabs );
-			$tabs_count = count( $tabs );
+				'url'    => $this->reorder_page,
+				'label'  => $this->heading,
+				'get'    => 'main',
+				'action' => 'metronet_reorder_posts_interface_' . $this->post_type,
+			),
+		);
+		$tabs = apply_filters( 'metronet_reorder_posts_tabs_' . $this->post_type, (array) $tabs );
 
-			//Output tabs
-			$tab_html = '';
-			if ( $tabs && ! empty( $tabs ) ) {
-				$tab_html  .= '<h2 class="nav-tab-wrapper">';
-				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'main';
-				$do_action  = false;
-				foreach ( $tabs as $tab ) {
-					$classes = array( 'nav-tab' );
-					$tab_get = isset( $tab['get'] ) ? $tab['get'] : '';
-					if ( $active_tab == $tab_get ) {
-						$classes[] = 'nav-tab-active';
-						$do_action = isset( $tab['action'] ) ? $tab['action'] : false;
-					}
-					$tab_url   = isset( $tab['url'] ) ? $tab['url'] : '';
-					$tab_label = isset( $tab['label'] ) ? $tab['label'] : '';
-					$tab_html .= sprintf( '<a href="%s" class="%s">%s</a>', esc_url( $tab_url ), esc_attr( implode( ' ', $classes ) ), esc_html( $tab['label'] ) );
-				}
-				$tab_html .= '</h2>';
-				if ( $tabs_count > 1 ) {
-					echo $tab_html;
-				}
-				if ( $do_action ) {
-					do_action( $do_action );
-				}
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'main'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$do_action  = '';
+		$matched    = false;
+		foreach ( $tabs as $tab ) {
+			$tab_get = isset( $tab['get'] ) ? (string) $tab['get'] : '';
+			if ( $active_tab === $tab_get ) {
+				$do_action = isset( $tab['action'] ) ? $tab['action'] : '';
+				$matched   = true;
+				break;
 			}
-			?>
-		</div><!-- .wrap -->
+		}
+		if ( ! $matched && ! empty( $tabs[0]['action'] ) ) {
+			$do_action  = $tabs[0]['action'];
+			$active_tab = isset( $tabs[0]['get'] ) ? (string) $tabs[0]['get'] : 'main';
+		}
+
+		$show_tabs = count( $tabs ) > 1;
+		$admin     = MN_Reorder_Admin::get_instance();
+		?>
+		<div class="wrap mn-rf-settings">
+			<header class="mn-rf-settings__header">
+				<h1 class="mn-rf-settings__title"><?php echo esc_html( $this->heading ); ?></h1>
+			</header>
+			<hr class="wp-header-end" />
+			<div class="mn-rf-settings__body">
+				<?php if ( $show_tabs ) : ?>
+					<div class="rf-tabs">
+						<nav class="rf-tabs__list" aria-label="<?php echo esc_attr( $this->heading ); ?>">
+							<?php foreach ( $tabs as $tab ) : ?>
+								<?php
+								$tab_get   = isset( $tab['get'] ) ? (string) $tab['get'] : '';
+								$tab_url   = isset( $tab['url'] ) ? $tab['url'] : '';
+								$tab_label = isset( $tab['label'] ) ? $tab['label'] : '';
+								$current   = $active_tab === $tab_get;
+								?>
+								<a href="<?php echo esc_url( $tab_url ); ?>" class="rf-tabs__tab<?php echo $current ? ' is-current' : ''; ?>"<?php echo $current ? ' aria-current="page"' : ''; ?>>
+									<span class="rf-tabs__dot" aria-hidden="true"></span>
+									<?php echo esc_html( $tab_label ); ?>
+									<?php echo $admin->tab_shoulder(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG markup. ?>
+								</a>
+							<?php endforeach; ?>
+						</nav>
+						<div class="rf-tabs__panel">
+							<?php
+							if ( $do_action ) {
+								do_action( $do_action );
+							}
+							?>
+						</div>
+					</div>
+				<?php else : ?>
+					<div class="rf-tabs__panel">
+						<?php
+						if ( $do_action ) {
+							do_action( $do_action );
+						}
+						?>
+					</div>
+				<?php endif; ?>
+			</div>
+			<?php $admin->render_footer(); ?>
+		</div>
 		<?php
 	} //end sort_posts
 }
