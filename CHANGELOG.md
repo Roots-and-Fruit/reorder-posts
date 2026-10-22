@@ -9,33 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- The Query Loop block has a Reorder section with a Custom Order toggle. It uses the order saved in Reorder Posts.
-- That same section can sort the Query Loop by a field registered on the selected post type. Text fields sort A to Z. Number fields sort lowest to highest.
-- Settings includes Post Template attributes, off by default. When it is on, a Paragraph inside a Post Template has an Attributes panel for that post type's custom fields.
+- The Query Loop block has a Reorder panel in the block sidebar with a Custom Order toggle that uses the order saved in Reorder Posts, plus a Sort by field option to sort by any registered text or number field on that post type.
+- Settings includes a new Post Template attributes option, off by default. When enabled, a Paragraph block inside a Post Template can display a custom text or number field from that post type.
 
 ### Changed
 
-- On a page list, the expand arrow sits inline after the title. The drag grip stays at the left edge of every row.
-- The reorder list stops at 72 characters wide, so the screen can hold something beside it later.
-- Settings and each Reorder screen show up to three updates beside the main column, fetched from `https://updates.rootsandfruit.com/reorder-posts.json` and cached for 12 hours with a local fallback file.
-- Opening Reorder for posts, and other types that cannot have children, no longer runs a child query for every row. Pages still load their children.
-- The drag grip on each reorder row is narrower, and the dots sit in the middle of that grip.
-- The first settings tab is Settings. Post Template attributes and the per-post-type default order live there. The default order section is labeled Defaults.
-- Reorder screens use the same layout as Settings. Folder tabs show only when Reorder by Term or Reorder Terms adds one for that post type.
-- Dropping a row on a long list saves that parent in one request and one database write instead of chaining 50-row AJAX batches and updating every sibling one by one. Moving a page under a new parent saves the new parent and the old parent in two requests total. On a 120-item list, a drop went from 3 AJAX requests, 120 `UPDATE` statements, and 131 queries (~100 ms in-process) to 1 request, 1 `UPDATE`, and 2 queries (~27 ms); on a 300-item list, it went from 6 requests, 300 `UPDATE` statements, and 320 queries (~295 ms) to 1 request, 1 `UPDATE`, and 2 queries (~133 ms).
-- Opening Reorder for pages loads each level of the tree in one query instead of one per row. On a 150-page tree across three levels, screen queries dropped from 197 to 9 and load time dropped from ~152 ms to ~11 ms. A parent still shows at most 100 children.
+- Settings are grouped into folder tabs, with the first tab labeled Settings and the per-post-type default order section labeled Defaults. Add-on sections get their own tab when active, and existing saved values are unchanged.
+- Reorder screens now share the same layout, width, header, and footer as Settings, with folder tabs appearing when an add-on registers one for that post type and sample query snippets rendered in code blocks with a Copy button. Settings and each Reorder screen also show up to three updates from `https://updates.rootsandfruit.com/reorder-posts.json` beside the main column, cached for 12 hours with a local fallback file.
+- On hierarchical post types like Pages, the expand arrow sits inline after the title while the drag grip stays at the left edge of every row.
+- Dropping a row on a long list now saves that parent in a single request and one database write instead of chaining 50-row AJAX batches and updating every sibling one by one. Moving a page under a new parent saves the new parent and the old parent in two requests total.
+- Opening a Reorder screen for pages loads each level of the tree in one query instead of one query per row, and non-hierarchical post types like Posts no longer run child queries at all.
 
 ### Fixed
 
-- The reorder list’s rounded border was squared off at the corners by each row’s background, and the last row drew a straight line across the bottom curve.
-- A number field such as a book rating can be chosen in the Post Template Attributes panel. Paragraph content only accepted text fields, so the list said no sources were available.
-- Dragging a title on a tablet selects the text instead of moving the row. Drag from the grip. Add-on reorder lists get the same grip.
-
-## [2.6.2] - 2026-09-28
-
-### Changed
-
-- Settings are grouped into tabs. Existing labels and saved values are unchanged. Add-on sections get a tab when they are active.
+- Dragging a row now starts from the grip handle on the left so dragging across a title on a tablet selects text instead of moving the row. Add-on reorder lists get the same grip.
 
 ## [2.6.1] - 2026-05-02
 
@@ -221,8 +208,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial plugin release
 
-[Unreleased]: https://github.com/Roots-and-Fruit/reorder-posts/compare/2.6.2...HEAD
-[2.6.2]: https://github.com/Roots-and-Fruit/reorder-posts/compare/2.6.1...2.6.2
+[Unreleased]: https://github.com/Roots-and-Fruit/reorder-posts/compare/2.6.1...HEAD
 [2.6.1]: https://github.com/Roots-and-Fruit/reorder-posts/compare/2.6.0...2.6.1
 [2.6.0]: https://github.com/Roots-and-Fruit/reorder-posts/compare/2.5.3...2.6.0
 [2.5.3]: https://github.com/Roots-and-Fruit/reorder-posts/compare/2.5.1...2.5.3

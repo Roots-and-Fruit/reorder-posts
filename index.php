@@ -3,7 +3,7 @@
 Plugin Name: Reorder Posts
 Plugin URI: https://mattc.link/reorder-posts
 Description: Easily reorder posts and pages in WordPress
-Version: 2.6.2
+Version: 2.6.1
 Requires at least: 6.5
 Requires PHP: 7.2
 Author: Roots & Fruit

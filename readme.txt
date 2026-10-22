@@ -5,7 +5,7 @@ Plugin URL: https://wordpress.org/plugins/metronet-reorder-posts/
 Requires at Least: 6.5
 Tested up to: 7.1
 Tags: reorder, reorder posts, menu order, ordering, re-order
-Stable tag: 2.6.2
+Stable tag: 2.6.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -96,7 +96,6 @@ You can find the settings under Settings → Reorder Posts. The plugin works out
 
 When you open Settings → Reorder Posts or a post type's Reorder screen, the plugin requests `https://updates.rootsandfruit.com/reorder-posts.json` and caches the response in a transient for 12 hours to show up to three items under "Reorder All the Things Updates." The request runs only on those admin screens and does not send your site address, admin email, or any other site data. If the remote file is unavailable, the plugin falls back to the local `data/updates.json` file included with the plugin, and the settings and reorder screens still load and save.
 
-
 = Where is the "save" button when re-ordering? =
 
 There isn’t one. Changes are saved automatically as you drag and drop items. This keeps the workflow fast and eliminates unnecessary steps.
@@ -161,82 +160,125 @@ You can open a support request on WordPress.org or submit an issue on GitHub.
 
 == Changelog ==
 
-= 2.6.2 =
-* Released 2026-09-28
-* Settings are grouped into tabs. Existing labels and saved values are unchanged. Add-on sections get a tab when they are active.
-
 = 2.6.1 =
-* Released 2026-05-02
+Released 2026-05-02.
+
+**Changed**
+
 * Fix: Resolving PHP error notices for undefined indexes when saving admin settings.
 
 = 2.6.0 =
-* Released 2026-03-23
+Released 2026-03-23.
+
+**Changed**
+
 * Fix: Default post types that are enabled are only post and page. The rest should be opt-in.
 * Fix: All post types were having menus registered, even when they weren't explicitly enabled.
 * New: Reorder Posts shortcut shows up next to each post type in admin settings (if enabled).
 * New: Post types with no top-level menu now are visible at the root level and can be accessed via the admin shortcuts.
 
 = 2.5.3 =
-* Released 2022-05-27
+Released 2022-05-27.
+
+**Changed**
+
 * Cache busting for people who are receiving script errors around Nested Sortable.
 
 = 2.5.1 =
-* Released 2022-02-14
+Released 2022-02-14.
+
+**Changed**
+
 * Fixing sortable script with newer versions of jQuery sortable.
 
 = 2.5.0 =
-* Released 2020-11-18
+Released 2020-11-18.
+
+**Changed**
+
 * Fixing sortable script with newer versions of jQuery.
 
 = 2.4.1 =
-* Released 2019-02-16
+Released 2019-02-16.
+
+**Changed**
+
 * Added query to reorder posts for an example
 * Option to turn off query output
 
 = 2.4.0 =
-* Released 2016-08-14
+Released 2016-08-14.
+
+**Changed**
+
 * Major CSS overhaul inspired by the Nested Pages plugin
 * The sorting is now mobile friendly
 
 = 2.3.0 =
-* Released 2016-08-12
+Released 2016-08-12.
+
+**Changed**
+
 * Added screen options to set the number of posts displayed
 
 = 2.2.2 =
-* Released 2015-12-04
+Released 2015-12-04.
+
+**Changed**
+
 * Fixed loading animation that displays out of nowhere
 
 = 2.2.1 =
-* Released 2015-11-09
+Released 2015-11-09.
+
+**Changed**
+
 * Fixed pagination issue
 
 = 2.2.0 =
-* Released 2015-11-1
+Released 2015-11-01.
+
+**Changed**
+
 * Loading animation now shows inline
 
 = 2.1.5 =
+Released 2015-10-02.
 
-* Released 2015-10-02
+**Changed**
+
 * Fixing paging offset error in the backend.
 
 = 2.1.4 =
+Released 2015-04-24.
+
+**Changed**
+
 * Updated 2015-08-20 for WordPress 4.3
-* Released 2015-04-24
 * Added cache-busting when re-ordering
 * Added German translation
 * Ensuring WordPress 4.2 compatibility
 
 = 2.1.2 =
-* Released 2015-01-28
+Released 2015-01-28.
+
+**Changed**
+
 * Removed developer notice from Reorder pages
 
 = 2.1.1 =
-* Released 2015-01-21
+Released 2015-01-21.
+
+**Changed**
+
 * Fixed pagination issue
 * Improved Reorder save query performance significantly
 
 = 2.1.0 =
-* Released 2015-01-19
+Released 2015-01-19.
+
+**Changed**
+
 * Added add-on support
 * Make sure reordering can only be done by those with edit_pages privileges
 * Added pagination for performance reasons
@@ -244,12 +286,18 @@ You can open a support request on WordPress.org or submit an issue on GitHub.
 * Added warning message for those with a lot of posts
 
 = 2.0.2 =
-* Released 2014-12-26
+Released 2014-12-26.
+
+**Changed**
+
 * Bug fix:  Saving admin panel settings resulted in a variety of PHP offset error messages.
 * Bug fix:  Querying multiple post types resulted in PHP illegal offset error messages.
 
 = 2.0.1 =
-* Released 2014-12-23
+Released 2014-12-23.
+
+**Changed**
+
 * Altered contributor documentation.
 * Adding filters for determining where the Reorder sub-menu will show up.
 * Sub-menu headings now reflect the post type that is being re-ordered.
@@ -257,49 +305,68 @@ You can open a support request on WordPress.org or submit an issue on GitHub.
 * Changed class names to be more unique.
 
 = 2.0.0 =
-* Released 2014-12-12
+Released 2014-12-12.
+
+**Changed**
+
 * Added settings panel for enabling/disabling the Reorder plugin for post types.
 * Added advanced settings for overriding the menu order of post types.
 * Added internationalization capabilities.
 * Slightly adjusted the styles of the Reordering interface.
 
 = 1.0.6 =
+Released 2013-07-19.
+
+**Changed**
+
 * Updated 2014-12-11 - Ensuring WordPress 4.1 compatibility
-* Released 2013-07-19
 * Added new filter for editing the post-types supported
 * Thanks to mathielo for the suggestion and code contribution.
 
 = 1.0.5 =
-* Released 2012-08-09
+Released 2012-08-09.
+
+**Changed**
+
 * Added expand/collapse section for nested post types
 * Added better page detection for scripts and styles
 
 = 1.0.4 =
-* Released 2012-07-11
+Released 2012-07-11.
+
+**Changed**
+
 * Added support for hierarchical post types
 
 = 1.0.3 =
-* Released 2012-05-09
+Released 2012-05-09.
+
+**Changed**
+
 * Updated screenshot
 * Corrected function prefix
 * Additional: changed readme.txt (didn't bump version number)
 
 = 1.0.2 =
-* Released 2012-05-09
+Released 2012-05-09.
+
+**Changed**
+
 * Added ability to post type of posts to be reordered
 * Fixed bug in initial order
 
 = 1.0.1 =
+**Changed**
+
 * Added ability to change menu name via class argument
 * Removed support for non-hierarchical post-types
 
 = 1.0 =
+**Changed**
+
 * Initial plugin release
 
 == Upgrade Notice ==
-
-= 2.6.2 =
-Settings are grouped into tabs. Your saved settings are unchanged.
 
 = 2.6.1 =
 Fix: resolving undefined array indexes when saving admin settings.

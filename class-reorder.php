@@ -598,24 +598,22 @@ final class MN_Reorder {
 		if ( ! isset( $options['show_query'] ) || 'on' === $options['show_query'] ) :
 			printf( '<h3>%s</h3>', esc_html__( 'Reorder Posts Query', 'metronet-reorder-posts' ) );
 			printf( '<p>%s</p>', esc_html__( 'You will need custom code to reorder posts.  Here are some example query arguments for getting your content.', 'metronet-reorder-posts' ) );
-			$query = "
-\$query = array(
-    'orderby' => 'menu_order',
-    'order' => 'ASC',
-    'post_status' => 'publish',
-	'post_type' => '{$this->post_type}',
-	'posts_per_page' => {$this->posts_per_page}
+			$query = "\$query = array(
+	'orderby'        => 'menu_order',
+	'order'          => 'ASC',
+	'post_status'    => 'publish',
+	'post_type'      => '{$this->post_type}',
+	'posts_per_page' => {$this->posts_per_page},
 );
 \$posts = get_posts( \$query );
-if( ! empty( \$posts ) ) {
-     echo '<ul>';
-     foreach( \$posts as \$post ) {
-          printf( '<li><a href=\"%s\">%s</a></li>', esc_url( get_permalink( \$post->ID ) ), esc_html( \$post->post_title ) );
-    }
-    echo '</ul>';
-}
-";
-			printf( '<blockquote><pre><code>%s</code></pre></blockquote>', esc_html( $query ) );
+if ( ! empty( \$posts ) ) {
+	echo '<ul>';
+	foreach ( \$posts as \$post ) {
+		printf( '<li><a href=\"%s\">%s</a></li>', esc_url( get_permalink( \$post->ID ) ), esc_html( \$post->post_title ) );
+	}
+	echo '</ul>';
+}";
+			MN_Reorder_Admin::get_instance()->render_code_block( $query );
 		endif;
 	}
 

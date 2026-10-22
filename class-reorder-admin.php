@@ -118,11 +118,18 @@ class MN_Reorder_Admin {
 	public function add_settings_field_post_template_attributes() {
 		$options = $this->get_plugin_options();
 		$enabled = isset( $options['post_template_attributes'] ) && 'on' === $options['post_template_attributes'];
-		printf(
-			'<p><label for="reorder_post_template_attributes"><input type="checkbox" name="metronet-reorder-posts[post_template_attributes]" id="reorder_post_template_attributes" value="on" %s /> %s</label></p>',
-			checked( $enabled, true, false ),
-			esc_html__( 'Enable Attributes on Post Template blocks. A Paragraph inside the template can then show a custom field.', 'metronet-reorder-posts' )
+		echo '<div class="mn-rf-type">';
+		echo '<input type="hidden" name="metronet-reorder-posts[post_template_attributes]" value="off" />';
+		$this->render_toggle(
+			array(
+				'name'    => 'metronet-reorder-posts[post_template_attributes]',
+				'value'   => 'on',
+				'checked' => $enabled,
+				'id'      => 'reorder_post_template_attributes',
+				'note'    => __( 'Enable Attributes on Post Template blocks. A Paragraph inside the template can then show a custom field.', 'metronet-reorder-posts' ),
+			)
 		);
+		echo '</div>';
 	}
 
 	/**
@@ -494,8 +501,32 @@ class MN_Reorder_Admin {
 	 * Styles and script shared by Settings and the reorder screens.
 	 */
 	public function enqueue_screen_assets() {
-		wp_enqueue_style( 'metronet-reorder-posts-settings', REORDER_URL . '/css/settings.css', array(), '2.6.2.17' );
-		wp_enqueue_script( 'metronet-reorder-posts-settings', REORDER_URL . '/scripts/settings.js', array(), '2.6.2.5', true );
+		wp_enqueue_style( 'metronet-reorder-posts-settings', REORDER_URL . '/css/settings.css', array(), '20261022.19' );
+		wp_enqueue_script( 'metronet-reorder-posts-settings', REORDER_URL . '/scripts/settings.js', array(), '20261022.6', true );
+	}
+
+	/**
+	 * CDS code block with window chrome, copy button, and language label.
+	 *
+	 * @param string $code       Code snippet text.
+	 * @param string $lang       Language badge. Defaults to PHP.
+	 * @param string $copy_label Accessible name for the copy button.
+	 */
+	public function render_code_block( $code, $lang = 'PHP', $copy_label = '' ) {
+		if ( '' === $copy_label ) {
+			$copy_label = __( 'Copy code', 'metronet-reorder-posts' );
+		}
+		echo '<div class="rf-code">';
+		echo '<div class="rf-code__chrome">';
+		echo '<div class="rf-code__dots" aria-hidden="true"><span></span><span></span><span></span></div>';
+		echo '<button type="button" class="rf-code__copy" aria-label="' . esc_attr( $copy_label ) . '">';
+		echo '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 8.25V6A2.25 2.25 0 0014.25 3.75H6A2.25 2.25 0 003.75 6v8.25A2.25 2.25 0 006 16.5h2.25m8.25-8.25H18A2.25 2.25 0 0120.25 10.5V18A2.25 2.25 0 0118 20.25h-7.5A2.25 2.25 0 018.25 18v-1.5m8.25-8.25h-6A2.25 2.25 0 008.25 10.5v6"/></svg>';
+		echo '</button></div>';
+		echo '<pre class="rf-code__body"><code>' . esc_html( trim( (string) $code ) ) . '</code></pre>';
+		if ( '' !== $lang ) {
+			echo '<span class="rf-code__lang">' . esc_html( $lang ) . '</span>';
+		}
+		echo '</div>';
 	}
 
 	/**
