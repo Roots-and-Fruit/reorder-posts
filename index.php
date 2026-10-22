@@ -46,6 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 require 'class-reorder.php';
 require 'class-reorder-admin.php';
+require 'class-mn-reorder-blocks.php';
 
 /**
  * Define constants

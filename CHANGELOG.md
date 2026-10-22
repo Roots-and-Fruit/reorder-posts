@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The Query Loop block has a Reorder section with a Custom Order toggle. It uses the order saved in Reorder Posts.
+- That same section can sort the Query Loop by a field registered on the selected post type. Text fields sort A to Z. Number fields sort lowest to highest.
+- Settings includes Post Template attributes, off by default. When it is on, a Paragraph inside a Post Template has an Attributes panel for that post type's custom fields.
+
 ### Changed
 
+- The first settings tab is Settings. Post Template attributes and the per-post-type default order live there. The default order section is labeled Defaults.
 - Reorder screens use the same layout as Settings. Folder tabs show only when Reorder by Term or Reorder Terms adds one for that post type.
 
 ### Fixed
 
+- A number field such as a book rating can be chosen in the Post Template Attributes panel. Paragraph content only accepted text fields, so the list said no sources were available.
 - Dragging a title on a tablet selects the text instead of moving the row. Drag from the grip. Add-on reorder lists get the same grip.
 
 ## [2.6.2] - 2026-09-28

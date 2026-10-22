@@ -113,6 +113,19 @@ class MN_Reorder_Admin {
 	}
 
 	/**
+	 * Optional control so a Paragraph inside a Post Template can show a custom field.
+	 */
+	public function add_settings_field_post_template_attributes() {
+		$options = $this->get_plugin_options();
+		$enabled = isset( $options['post_template_attributes'] ) && 'on' === $options['post_template_attributes'];
+		printf(
+			'<p><label for="reorder_post_template_attributes"><input type="checkbox" name="metronet-reorder-posts[post_template_attributes]" id="reorder_post_template_attributes" value="on" %s /> %s</label></p>',
+			checked( $enabled, true, false ),
+			esc_html__( 'Enable Attributes on Post Template blocks. A Paragraph inside the template can then show a custom field.', 'metronet-reorder-posts' )
+		);
+	}
+
+	/**
 	 * Add post types to be overridden using menu_order
 	 *
 	 * Output options for menu_order
@@ -128,6 +141,7 @@ class MN_Reorder_Admin {
 	}
 	 */
 	public function add_settings_field_menu_order( $args = array() ) {
+		echo '<p>' . esc_html__( 'Choose a default order for each post type. Menu Order applies that direction to front-end lists. None leaves each query to decide its own order.', 'metronet-reorder-posts' ) . '</p>';
 		//Get options/defaults
 		$settings            = $this->get_plugin_options();
 		$settings_menu_order = isset( $settings['menu_order'] ) ? $settings['menu_order'] : array();
@@ -258,9 +272,6 @@ class MN_Reorder_Admin {
 		}
 	}
 
-	public function add_settings_heading_menu_order() {
-		printf( '<p>%s</p>', esc_html__( 'These are advanced options and you should only use these if you know what you are doing.  These can overwrite the menu orders of custom queries (using get_posts or WP_Query), custom post type archives, and even the order your blog posts display.', 'metronet-reorder-posts' ) );
-	}
 	/**
 	 * Add a settings link to the plugin's options.
 	 *
@@ -329,15 +340,15 @@ class MN_Reorder_Admin {
 	public function init_admin_settings() {
 		register_setting( 'metronet-reorder-posts', 'metronet-reorder-posts', array( $this, 'sanitization' ) );
 
-		add_settings_section( 'mn-reorder-post-types', _x( 'Enable Post Types', 'plugin settings heading', 'metronet-reorder-posts' ), '__return_empty_string', 'metronet-reorder-posts' );
-
-		add_settings_section( 'mn-reorder-menu-order', _x( 'Advanced', 'plugin settings heading', 'metronet-reorder-posts' ), array( $this, 'add_settings_heading_menu_order' ), 'metronet-reorder-posts' );
+		add_settings_section( 'mn-reorder-post-types', _x( 'Settings', 'plugin settings heading', 'metronet-reorder-posts' ), '__return_empty_string', 'metronet-reorder-posts' );
 
 		add_settings_section( 'mn-reorder-query', _x( 'Reorder Posts', 'plugin settings heading', 'metronet-reorder-posts' ), '__return_empty_string', 'metronet-reorder-posts' );
 
 		add_settings_field( 'mn-post-types', __( 'Post Types', 'metronet-reorder-posts' ), array( $this, 'add_settings_field_post_types' ), 'metronet-reorder-posts', 'mn-reorder-post-types', array( 'desc' => __( 'Select the post types you would like this plugin enabled for.', 'metronet-reorder-posts' ) ) );
 
-		add_settings_field( 'mn-menu-order', __( 'Select the menu order arguments.', 'metronet-reorder-posts' ), array( $this, 'add_settings_field_menu_order' ), 'metronet-reorder-posts', 'mn-reorder-menu-order', array( 'desc' => __( 'Select the menu order for the post types.', 'metronet-reorder-posts' ) ) );
+		add_settings_field( 'mn-post-template-attributes', __( 'Attributes', 'metronet-reorder-posts' ), array( $this, 'add_settings_field_post_template_attributes' ), 'metronet-reorder-posts', 'mn-reorder-post-types' );
+
+		add_settings_field( 'mn-menu-order', __( 'Defaults', 'metronet-reorder-posts' ), array( $this, 'add_settings_field_menu_order' ), 'metronet-reorder-posts', 'mn-reorder-post-types', array( 'desc' => __( 'Select the menu order for the post types.', 'metronet-reorder-posts' ) ) );
 
 		add_settings_field( 'mn-reorder-query', __( 'Show Posts Query', 'metronet-reorder-posts' ), array( $this, 'add_settings_reorder_query' ), 'metronet-reorder-posts', 'mn-reorder-query', array( 'desc' => __( 'Show a helpful sample query for Reorder posts.', 'metronet-reorder-posts' ) ) );
 	}
@@ -697,6 +708,11 @@ class MN_Reorder_Admin {
 	 * @return array Sanitized array of options
 	 */
 	public function sanitization( $input = array() ) {
+		if ( ! is_array( $input ) ) {
+			$input = array();
+		}
+		$input['post_template_attributes'] = ( isset( $input['post_template_attributes'] ) && 'on' === $input['post_template_attributes'] ) ? 'on' : 'off';
+
 		//Get post type options
 		$post_types = $input['post_types'] ?? array();
 		if ( ! empty( $post_types ) ) {
