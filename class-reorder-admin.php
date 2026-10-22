@@ -494,7 +494,7 @@ class MN_Reorder_Admin {
 	 * Styles and script shared by Settings and the reorder screens.
 	 */
 	public function enqueue_screen_assets() {
-		wp_enqueue_style( 'metronet-reorder-posts-settings', REORDER_URL . '/css/settings.css', array(), '2.6.2.7' );
+		wp_enqueue_style( 'metronet-reorder-posts-settings', REORDER_URL . '/css/settings.css', array(), '2.6.2.17' );
 		wp_enqueue_script( 'metronet-reorder-posts-settings', REORDER_URL . '/scripts/settings.js', array(), '2.6.2.5', true );
 	}
 
@@ -579,6 +579,164 @@ class MN_Reorder_Admin {
 		echo '</a>';
 	}
 
+	/**
+	 * Newspaper mark for an update item.
+	 */
+	private function newspaper_icon() {
+		return '<span class="mn-reorder-updates__tile" aria-hidden="true"><svg class="mn-reorder-updates__icon" viewBox="0 0 24 24" width="20" height="20" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M4.5 5.5h12v13a1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0 1.5-1.5V9.5h-3M4.5 5.5v13a1.5 1.5 0 0 0 1.5 1.5h12M7.5 9.5h6M7.5 13h6M7.5 16.5h4"/></svg></span>';
+	}
+
+	/**
+	 * Public URL and transient key for the remote updates feed.
+	 */
+	const UPDATES_URL       = 'https://updates.rootsandfruit.com/reorder-posts.json';
+	const UPDATES_TRANSIENT = 'mn_reorder_posts_updates';
+
+	/**
+	 * Up to three updates beside the settings form and each reorder screen.
+	 *
+	 * The list is fetched from updates.rootsandfruit.com, cached in a transient,
+	 * and falls back to the local file shipped with the plugin. If neither has
+	 * valid items, nothing prints and the screen still loads.
+	 */
+	public function render_updates() {
+		$bundle = $this->update_items();
+		if ( empty( $bundle['items'] ) ) {
+			return;
+		}
+
+		echo '<aside class="mn-reorder-updates" aria-labelledby="mn-reorder-updates-heading" data-source="' . esc_attr( $bundle['source'] ) . '" data-feed-url="' . esc_url( self::UPDATES_URL ) . '">';
+		echo '<h2 id="mn-reorder-updates-heading" class="mn-reorder-updates__heading">' . esc_html__( 'Reorder All the Things Updates', 'metronet-reorder-posts' ) . '</h2>';
+		echo '<ol class="mn-reorder-updates__feed">';
+		foreach ( $bundle['items'] as $item ) {
+			echo '<li class="mn-reorder-updates__item">';
+			echo $this->newspaper_icon(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG.
+			echo '<div class="mn-reorder-updates__copy">';
+			$this->external_link( $item['url'], $item['title'], 'mn-reorder-updates__link' );
+			printf(
+				'<time class="mn-reorder-updates__date" datetime="%1$s">%2$s</time>',
+				esc_attr( $item['date'] ),
+				esc_html( $item['display_date'] )
+			);
+			echo '<p class="mn-reorder-updates__sentence">' . esc_html( $item['sentence'] ) . '</p>';
+			echo '</div></li>';
+		}
+		echo '</ol></aside>';
+	}
+
+	/**
+	 * Three newest items from the remote updates feed or the local fallback file.
+	 *
+	 * @return array{source:string,items:array<int, array{title:string,url:string,date:string,display_date:string,sentence:string}>}
+	 */
+	private function update_items() {
+		$data   = null;
+		$source = 'remote';
+		$cached = get_transient( self::UPDATES_TRANSIENT );
+
+		if ( is_array( $cached ) && isset( $cached['items'] ) && is_array( $cached['items'] ) ) {
+			$data   = $cached;
+			$source = isset( $cached['source'] ) && is_string( $cached['source'] ) ? $cached['source'] : 'remote';
+		} else {
+			$response = wp_remote_get(
+				self::UPDATES_URL,
+				array(
+					'timeout'             => 2,
+					'redirection'         => 0,
+					'reject_unsafe_urls'  => true,
+					'limit_response_size' => 65536,
+					'user-agent'          => 'WordPress/Reorder-Posts',
+				)
+			);
+
+			if ( ! is_wp_error( $response ) && 200 === wp_remote_retrieve_response_code( $response ) ) {
+				$decoded = json_decode( wp_remote_retrieve_body( $response ), true );
+				if ( is_array( $decoded ) && ! empty( $decoded['items'] ) && is_array( $decoded['items'] ) ) {
+					$data = array(
+						'source' => 'remote',
+						'items'  => $decoded['items'],
+					);
+					set_transient( self::UPDATES_TRANSIENT, $data, 12 * HOUR_IN_SECONDS );
+				}
+			}
+
+			if ( null === $data ) {
+				$path = REORDER_DIR . '/data/updates.json';
+				if ( is_readable( $path ) ) {
+					$local = wp_json_file_decode( $path, array( 'associative' => true ) );
+					if ( is_array( $local ) && ! empty( $local['items'] ) && is_array( $local['items'] ) ) {
+						$data   = array(
+							'source' => 'local',
+							'items'  => $local['items'],
+						);
+						$source = 'local';
+					}
+				}
+				set_transient(
+					self::UPDATES_TRANSIENT,
+					null !== $data ? $data : array(
+						'source' => 'none',
+						'items'  => array(),
+					),
+					HOUR_IN_SECONDS
+				);
+			}
+		}
+
+		if ( ! is_array( $data ) || empty( $data['items'] ) || ! is_array( $data['items'] ) ) {
+			return array(
+				'source' => 'none',
+				'items'  => array(),
+			);
+		}
+
+		$items = array();
+		foreach ( $data['items'] as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$title    = isset( $item['title'] ) ? trim( wp_strip_all_tags( (string) $item['title'] ) ) : '';
+			$url      = isset( $item['url'] ) ? esc_url_raw( (string) $item['url'] ) : '';
+			$date     = isset( $item['date'] ) ? (string) $item['date'] : '';
+			$sentence = isset( $item['sentence'] ) ? trim( wp_strip_all_tags( (string) $item['sentence'] ) ) : '';
+			if ( '' === $title || '' === $url || '' === $sentence || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+				continue;
+			}
+
+			$timestamp = strtotime( $date . ' 12:00:00 UTC' );
+			if ( false === $timestamp ) {
+				continue;
+			}
+
+			$items[] = array(
+				'title'        => $title,
+				'url'          => $url,
+				'date'         => $date,
+				'display_date' => date_i18n( get_option( 'date_format' ), $timestamp ),
+				'sentence'     => $sentence,
+				'timestamp'    => $timestamp,
+			);
+		}
+
+		usort(
+			$items,
+			static function ( $a, $b ) {
+				return $b['timestamp'] <=> $a['timestamp'];
+			}
+		);
+
+		$items = array_slice( $items, 0, 3 );
+		foreach ( $items as $index => $item ) {
+			unset( $items[ $index ]['timestamp'] );
+		}
+
+		return array(
+			'source' => $source,
+			'items'  => $items,
+		);
+	}
+
 	public function render_footer() {
 		echo '<footer class="mn-rf-footer">';
 		$this->external_link( 'https://mattc.link/reorder-posts-rating', __( 'Like Reorder Posts? Give us a 5-★ Rating Here', 'metronet-reorder-posts' ), 'mn-rf-footer__rate' );
@@ -638,53 +796,58 @@ class MN_Reorder_Admin {
 			</header>
 			<hr class="wp-header-end" />
 			<div class="mn-rf-settings__body">
-				<form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
-					<?php settings_fields( $page ); ?>
-					<?php if ( $sections ) : ?>
-						<div class="rf-tabs">
-							<nav class="rf-tabs__list" aria-label="<?php echo esc_attr( $title ); ?>">
-								<?php foreach ( $sections as $id => $section ) : ?>
-									<?php
-									$url    = add_query_arg(
-										array(
-											'page' => $page,
-											'tab'  => $id,
-										),
-										admin_url( 'options-general.php' )
-									);
-									$label  = ! empty( $section['title'] ) ? $section['title'] : $id;
-									$active = $tab === $id;
-									?>
-									<a href="<?php echo esc_url( $url ); ?>" class="rf-tabs__tab<?php echo $active ? ' is-current' : ''; ?>"<?php echo $active ? ' aria-current="page"' : ''; ?>>
-										<span class="rf-tabs__dot" aria-hidden="true"></span>
-										<?php echo esc_html( $label ); ?>
-										<?php echo $this->tab_shoulder(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG markup. ?>
-									</a>
-								<?php endforeach; ?>
-							</nav>
-							<div class="rf-tabs__panel">
-								<?php foreach ( $sections as $id => $section ) : ?>
-									<div class="mn-rf-settings__panel"<?php echo $tab === $id ? '' : ' hidden'; ?>>
-										<?php if ( ! empty( $section['title'] ) ) : ?>
-											<h2><?php echo esc_html( $section['title'] ); ?></h2>
-										<?php endif; ?>
-										<?php
-										if ( ! empty( $section['callback'] ) ) {
-											call_user_func( $section['callback'], $section );
-										}
-										if ( ! empty( $wp_settings_fields[ $page ][ $id ] ) ) {
-											echo '<table class="form-table" role="presentation">';
-											do_settings_fields( $page, $id );
-											echo '</table>';
-										}
-										?>
+				<div class="mn-reorder-stage">
+					<div class="mn-reorder-main">
+						<form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
+							<?php settings_fields( $page ); ?>
+							<?php if ( $sections ) : ?>
+								<div class="rf-tabs">
+									<nav class="rf-tabs__list" aria-label="<?php echo esc_attr( $title ); ?>">
+										<?php foreach ( $sections as $id => $section ) : ?>
+											<?php
+											$url    = add_query_arg(
+												array(
+													'page' => $page,
+													'tab'  => $id,
+												),
+												admin_url( 'options-general.php' )
+											);
+											$label  = ! empty( $section['title'] ) ? $section['title'] : $id;
+											$active = $tab === $id;
+											?>
+											<a href="<?php echo esc_url( $url ); ?>" class="rf-tabs__tab<?php echo $active ? ' is-current' : ''; ?>"<?php echo $active ? ' aria-current="page"' : ''; ?>>
+												<span class="rf-tabs__dot" aria-hidden="true"></span>
+												<?php echo esc_html( $label ); ?>
+												<?php echo $this->tab_shoulder(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG markup. ?>
+											</a>
+										<?php endforeach; ?>
+									</nav>
+									<div class="rf-tabs__panel">
+										<?php foreach ( $sections as $id => $section ) : ?>
+											<div class="mn-rf-settings__panel"<?php echo $tab === $id ? '' : ' hidden'; ?>>
+												<?php if ( ! empty( $section['title'] ) ) : ?>
+													<h2><?php echo esc_html( $section['title'] ); ?></h2>
+												<?php endif; ?>
+												<?php
+												if ( ! empty( $section['callback'] ) ) {
+													call_user_func( $section['callback'], $section );
+												}
+												if ( ! empty( $wp_settings_fields[ $page ][ $id ] ) ) {
+													echo '<table class="form-table" role="presentation">';
+													do_settings_fields( $page, $id );
+													echo '</table>';
+												}
+												?>
+											</div>
+										<?php endforeach; ?>
+										<?php submit_button(); ?>
 									</div>
-								<?php endforeach; ?>
-								<?php submit_button(); ?>
-							</div>
-						</div>
-					<?php endif; ?>
-				</form>
+								</div>
+							<?php endif; ?>
+						</form>
+					</div>
+					<?php $this->render_updates(); ?>
+				</div>
 			</div>
 			<?php $this->render_footer(); ?>
 		</div>

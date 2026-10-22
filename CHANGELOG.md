@@ -15,11 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- On a page list, the expand arrow sits inline after the title. The drag grip stays at the left edge of every row.
+- The reorder list stops at 72 characters wide, so the screen can hold something beside it later.
+- Settings and each Reorder screen show up to three updates beside the main column, fetched from `https://updates.rootsandfruit.com/reorder-posts.json` and cached for 12 hours with a local fallback file.
+- Opening Reorder for posts, and other types that cannot have children, no longer runs a child query for every row. Pages still load their children.
+- The drag grip on each reorder row is narrower, and the dots sit in the middle of that grip.
 - The first settings tab is Settings. Post Template attributes and the per-post-type default order live there. The default order section is labeled Defaults.
 - Reorder screens use the same layout as Settings. Folder tabs show only when Reorder by Term or Reorder Terms adds one for that post type.
+- Dropping a row on a long list saves that parent in one request and one database write instead of chaining 50-row AJAX batches and updating every sibling one by one. Moving a page under a new parent saves the new parent and the old parent in two requests total. On a 120-item list, a drop went from 3 AJAX requests, 120 `UPDATE` statements, and 131 queries (~100 ms in-process) to 1 request, 1 `UPDATE`, and 2 queries (~27 ms); on a 300-item list, it went from 6 requests, 300 `UPDATE` statements, and 320 queries (~295 ms) to 1 request, 1 `UPDATE`, and 2 queries (~133 ms).
+- Opening Reorder for pages loads each level of the tree in one query instead of one per row. On a 150-page tree across three levels, screen queries dropped from 197 to 9 and load time dropped from ~152 ms to ~11 ms. A parent still shows at most 100 children.
 
 ### Fixed
 
+- The reorder list’s rounded border was squared off at the corners by each row’s background, and the last row drew a straight line across the bottom curve.
 - A number field such as a book rating can be chosen in the Post Template Attributes panel. Paragraph content only accepted text fields, so the list said no sources were available.
 - Dragging a title on a tablet selects the text instead of moving the row. Drag from the grip. Add-on reorder lists get the same grip.
 

@@ -12,7 +12,7 @@
 	
 }
 #post-list .non-hierarchical {
-	padding-left: 20px;
+	padding-left: 4px;
 }
 #post-list li {
 	background: #FFF;
@@ -24,38 +24,10 @@
 #post-list > li:first-child {
 	border-top: 0;
 }
-#post-list > li:last-child {
-	border-bottom: 1px solid #e1e1e1;
-}
 #post-list div img {
 	vertical-align: middle;
 	margin: 0 12px 0 0;
 	border: 2px solid #ddd;
-}
-.row-action {
-	float: left;
-    margin: 0px 10px 0 0;
-    width: 40px;
-    height: 40px;
-    background-color: #f0f0f0;
-    text-align: center;
-}
-.expand.row-action span,
-.collapse.row-action span {
-	display: inline-block;
-	width: 26px;
-	height: 26px;
-	background: #FFF;
-	-webkit-border-radius: 50%;
-    border-radius: 50%;
-    border: 1px solid #e1e1e1;
-    font-size: 24px;
-    margin-top: 7px;
-    cursor: pointer;
-}
-.expand.row-action span:hover,
-.collapse.row-action span:hover {
-	border-color: #c0c0c0;
 }
 .row-content {
 	display: flex;
@@ -74,19 +46,57 @@
 	align-items: center;
 	justify-content: center;
 	align-self: stretch;
-	flex: 0 0 44px;
-	width: 44px;
+	flex: 0 0 28px;
+	width: 28px;
 	min-height: 44px;
 	cursor: grab;
 	touch-action: none;
 }
+.mn-reorder-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	min-width: 0;
+	font-weight: 700;
+}
+.mn-reorder-expand {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	line-height: 0;
+	cursor: pointer;
+}
+.mn-reorder-expand__arrow {
+	display: block;
+	width: 1rem;
+	height: 1rem;
+	overflow: visible;
+	transition: transform 0.28s ease;
+}
+.mn-reorder-expand[aria-expanded="true"] .mn-reorder-expand__arrow {
+	transform: rotate(90deg);
+}
+.mn-reorder-expand:focus {
+	outline: none;
+}
+.mn-reorder-expand:focus-visible {
+	outline: 2px solid #40352a;
+	outline-offset: 2px;
+	border-radius: 2px;
+}
 .mn-reorder-handle__dots {
 	display: block;
 	width: 10px;
-	height: 16px;
-	background-image: radial-gradient(circle, #8c8f94 1.15px, transparent 1.2px);
+	height: 15px;
+	background-image: radial-gradient(circle at center, #8c8f94 1.15px, transparent 1.25px);
 	background-position: 0 0;
 	background-size: 5px 5px;
+	background-repeat: repeat;
 	pointer-events: none;
 }
 body.mn-reorder-dragging,

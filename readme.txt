@@ -92,6 +92,10 @@ Examples of each are on the respective pages above.  You are welcome to leave a 
 
 You can find the settings under Settings → Reorder Posts. The plugin works out of the box with no configuration, but the settings allow you to control which post types are enabled and access advanced options such as auto-sorting post types on the frontend.
 
+= Where do the updates on those screens come from? =
+
+When you open Settings → Reorder Posts or a post type's Reorder screen, the plugin requests `https://updates.rootsandfruit.com/reorder-posts.json` and caches the response in a transient for 12 hours to show up to three items under "Reorder All the Things Updates." The request runs only on those admin screens and does not send your site address, admin email, or any other site data. If the remote file is unavailable, the plugin falls back to the local `data/updates.json` file included with the plugin, and the settings and reorder screens still load and save.
+
 
 = Where is the "save" button when re-ordering? =
 

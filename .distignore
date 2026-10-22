@@ -5,6 +5,7 @@
 
 *.md
 *.zip
+tests/
 
 .DS_Store
 Thumbs.db

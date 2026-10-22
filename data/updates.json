@@ -1,0 +1,22 @@
+{
+	"items": [
+		{
+			"title": "Drag from the grip",
+			"url": "https://rootsandfruit.com/products/reorder-posts/updates/drag-from-the-grip/",
+			"date": "2026-10-18",
+			"sentence": "The dotted grip is the part of the row that starts a drag. The title stays put so you can still read it."
+		},
+		{
+			"title": "Pages keep their children",
+			"url": "https://rootsandfruit.com/products/reorder-posts/updates/pages-keep-their-children/",
+			"date": "2026-10-01",
+			"sentence": "A page with children shows an arrow after the title. Open it to drag the pages nested under that parent."
+		},
+		{
+			"title": "One list, then the public page",
+			"url": "https://rootsandfruit.com/products/reorder-posts/updates/one-list-then-the-public-page/",
+			"date": "2026-09-02",
+			"sentence": "Saving an order in the admin does not change the public site until that list is set to menu order."
+		}
+	]
+}

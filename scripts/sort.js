@@ -20,6 +20,7 @@ jQuery(document).ready(function ($) {
 		forcePlaceholderSize: true,
 		handle: '.mn-reorder-handle',
 		helper: 'clone',
+		appendTo: '.rf-tabs__panel',
 		items: 'li',
 		maxLevels: max_levels,
 		opacity: 0.6,
@@ -34,16 +35,12 @@ jQuery(document).ready(function ($) {
 			$loading_animation = jQuery('#loading-animation');
 			var reorder_ajax_callback = function (response) {
 				response = JSON.parse(response);
-				if (true == response.more_posts) {
-					$.post(ajaxurl, response, reorder_ajax_callback);
+				if (false != callback) {
+					var callback_ajax_args = callback;
+					callback = false;
+					$.post(ajaxurl, callback_ajax_args, reorder_ajax_callback);
 				} else {
-					if (false != callback) {
-						var callback_ajax_args = callback;
-						callback = false;
-						$.post(ajaxurl, callback_ajax_args, reorder_ajax_callback);
-					} else {
-						$('#loading-animation').hide();
-					}
+					$('#loading-animation').hide();
 				}
 			};
 			ui.item.find('div.row-content:first').append($loading_animation);
@@ -137,7 +134,7 @@ jQuery(document).ready(function ($) {
 		// Add Nesting capabilities
 		$('.row-content').each(function () {
 			var parents_count = $(this).parents('ul').length;
-			var padding = 30;
+			var padding = 4;
 			if (parents_count > 1) {
 				var new_padding = parents_count * 20 + padding;
 				$(this).css('padding-left', new_padding + 'px');
@@ -149,27 +146,23 @@ jQuery(document).ready(function ($) {
 
 	reorder_row_nesting();
 
-	$('#post-list .expand span').on('click', function (e) {
+	postList.on('click', '.mn-reorder-expand', function (e) {
 		e.preventDefault();
+		e.stopPropagation();
 
-		var state = $(this).data('state');
+		var button = $(this);
+		var open = button.attr('aria-expanded') === 'true';
+		var list = button.closest('li').children('ul.children');
+		var label = button.find('.screen-reader-text');
 
-		switch (state) {
-			case 1:
-			case undefined:
-				$(this)
-					.removeClass('dashicons-arrow-right')
-					.addClass('dashicons-arrow-down');
-				$(this).parent().parent().next('.children').fadeIn('fast');
-				$(this).data('state', 2);
-				break;
-			case 2:
-				$(this)
-					.removeClass('dashicons-arrow-down')
-					.addClass('dashicons-arrow-right');
-				$(this).parent().parent().next('.children').fadeOut('fast');
-				$(this).data('state', 1);
-				break;
+		if (open) {
+			list.fadeOut('fast');
+			button.attr('aria-expanded', 'false');
+			label.text(reorder_posts.expand);
+		} else {
+			list.fadeIn('fast');
+			button.attr('aria-expanded', 'true');
+			label.text(reorder_posts.collapse);
 		}
 	});
 });

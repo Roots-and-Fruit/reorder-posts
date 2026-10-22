@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 /**
  * Reorder posts
  *
@@ -210,7 +210,7 @@ final class MN_Reorder {
 	 * @access public
 	 * @returns int $found_posts Number of posts
 	 */
-	public function adjust_offset_pagination( $found_posts, $query ) {
+	public function adjust_offset_pagination( $found_posts, $query ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		//This sometimes will have a bug of showing an extra page, but it doesn't break anything, so leaving it for now.
 		if ( $found_posts > $this->posts_per_page ) {
 			$num_pages   = $found_posts / $this->offset;
@@ -228,26 +228,39 @@ final class MN_Reorder {
 	 * @global object $wpdb  The primary global database object used internally by WordPress
 	 */
 	public function ajax_save_post_order() {
+		$return = $this->save_post_order( $_POST ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified inside save_post_order.
+		if ( null === $return ) {
+			die( '' );
+		}
+		die( wp_json_encode( $return ) );
+	} //end ajax_save_post_order
+
+	/**
+	 * Process one post_sort request and return the response payload, or null when rejected.
+	 *
+	 * @param array $request Request values (defaults to $_POST from ajax_save_post_order).
+	 * @return array|null
+	 */
+	public function save_post_order( array $request ) {
 		global $wpdb;
 
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			die( '' );
+			return null;
 		}
+		$nonce = isset( $request['nonce'] ) ? sanitize_text_field( wp_unslash( $request['nonce'] ) ) : '';
 		// Verify nonce value, for security purposes
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'sortnonce' ) ) {
-			die( '' );
+		if ( ! wp_verify_nonce( $nonce, 'sortnonce' ) ) {
+			return null;
 		}
 
 		//Get Ajax Vars
-		$post_parent      = isset( $_POST['post_parent'] ) ? absint( $_POST['post_parent'] ) : 0;
-		$menu_order_start = isset( $_POST['start'] ) ? absint( $_POST['start'] ) : 0;
-		$post_id          = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-		$post_menu_order  = isset( $_POST['menu_order'] ) ? absint( $_POST['menu_order'] ) : 0;
-		$posts_to_exclude = isset( $_POST['excluded'] ) ? array_filter( $_POST['excluded'], 'absint' ) : array();
-		$post_type        = isset( $_POST['post_type'] ) ? sanitize_text_field( $_POST['post_type'] ) : false;
+		$post_parent     = isset( $request['post_parent'] ) ? absint( $request['post_parent'] ) : 0;
+		$post_id         = isset( $request['post_id'] ) ? absint( $request['post_id'] ) : 0;
+		$post_menu_order = isset( $request['menu_order'] ) ? absint( $request['menu_order'] ) : 0;
+		$post_type       = isset( $request['post_type'] ) ? sanitize_text_field( wp_unslash( $request['post_type'] ) ) : false;
 
 		if ( ! $post_type ) {
-			die( '' );
+			return null;
 		}
 
 		//Performance
@@ -258,76 +271,115 @@ final class MN_Reorder {
 		$return['more_posts']  = false;
 		$return['action']      = 'post_sort';
 		$return['post_parent'] = $post_parent;
-		$return['nonce']       = sanitize_text_field( $_POST['nonce'] );
+		$return['nonce']       = $nonce;
 		$return['post_id']     = $post_id;
 		$return['menu_order']  = $post_menu_order;
 		$return['post_type']   = $post_type;
-
-		//Update post if passed - Should run only on beginning of first iteration
-		if ( $post_id > 0 && ! isset( $_POST['more_posts'] ) ) {
-			$wpdb->update(
-				$wpdb->posts,
-				array(
-					'menu_order'  => $post_menu_order,
-					'post_parent' => $post_parent,
-				),
-				array( 'ID' => $post_id )
-			);
-			clean_post_cache( $post_id );
-			$posts_to_exclude[] = $post_id;
-		}
 
 		//Build Query
 		$query_args = array(
 			'post_type'              => $post_type,
 			'orderby'                => 'menu_order title',
 			'order'                  => $this->order,
-			'posts_per_page'         => 50,
+			'posts_per_page'         => -1,
+			'fields'                 => 'ids',
+			'no_found_rows'          => true,
 			'suppress_filters'       => true,
 			'ignore_sticky_posts'    => true,
 			'post_status'            => $this->post_status,
 			'post_parent'            => $post_parent,
-			'post__not_in'           => $posts_to_exclude,
+			'post__not_in'           => $post_id > 0 ? array( $post_id ) : array(),
 			'update_post_term_cache' => false,
 			'update_post_meta_cache' => false,
 		);
 		$posts      = new WP_Query( $query_args );
+		$map        = self::build_menu_order_map( $posts->posts, 0, $post_id, $post_menu_order );
 
-		$start = $menu_order_start;
-		if ( $posts->have_posts() ) {
-			foreach ( $posts->posts as $post ) {
-				//Increment start if matches menu_order and there is a post to change
-				if ( $start == $post_menu_order && $post_id > 0 ) {
-					++$start;
-				}
+		if ( ! empty( $map ) ) {
+			$when_clauses = array();
+			$when_params  = array();
+			$id_holders   = array();
+			$ids          = array();
 
-				if ( $post_id != $post->ID ) {
-					//Update post and counts
-					$wpdb->update(
-						$wpdb->posts,
-						array(
-							'menu_order'  => $start,
-							'post_parent' => $post_parent,
-						),
-						array( 'ID' => $post->ID )
-					);
-					clean_post_cache( $post );
-				}
-				$posts_to_exclude[] = $post->ID;
+			foreach ( $map as $row_id => $order_val ) {
+				$when_clauses[] = 'WHEN %d THEN %d';
+				$when_params[]  = $row_id;
+				$when_params[]  = $order_val;
+				$id_holders[]   = '%d';
+				$ids[]          = $row_id;
+			}
+
+			$when_sql = implode( ' ', $when_clauses );
+			$in_sql   = implode( ', ', $id_holders );
+
+			if ( $post_id > 0 ) {
+				$params = array_merge( $when_params, array( $post_id, $post_parent ), $ids );
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->posts} SET menu_order = CASE ID {$when_sql} END, post_parent = CASE WHEN ID = %d THEN %d ELSE post_parent END WHERE ID IN ({$in_sql})",
+						$params
+					)
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			} else {
+				$params = array_merge( $when_params, $ids );
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->posts} SET menu_order = CASE ID {$when_sql} END WHERE ID IN ({$in_sql})",
+						$params
+					)
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			}
+
+			foreach ( $ids as $row_id ) {
+				clean_post_cache(
+					(object) array(
+						'ID'        => $row_id,
+						'post_type' => $post_type,
+					)
+				);
+			}
+		}
+
+		return $return;
+	}
+
+	/**
+	 * Build the ID => menu_order assignment map for one parent save.
+	 *
+	 * @param int[] $ordered_sibling_ids Ordered sibling IDs (excluding $post_id when $post_id > 0).
+	 * @param int   $menu_order_start    Starting menu_order counter.
+	 * @param int   $post_id             Moved post ID, or 0 for an old-parent renumber pass.
+	 * @param int   $post_menu_order     Requested menu_order for the moved post.
+	 * @return array<int,int>
+	 */
+	private static function build_menu_order_map( array $ordered_sibling_ids, $menu_order_start, $post_id, $post_menu_order ) {
+		$post_id         = absint( $post_id );
+		$post_menu_order = absint( $post_menu_order );
+		$start           = absint( $menu_order_start );
+		$map             = array();
+
+		if ( $post_id > 0 ) {
+			$map[ $post_id ] = $post_menu_order;
+		}
+
+		foreach ( $ordered_sibling_ids as $sibling_id ) {
+			$sibling_id = absint( $sibling_id );
+			if ( 0 === $sibling_id || $sibling_id === $post_id ) {
+				continue;
+			}
+			if ( $start === $post_menu_order && $post_id > 0 ) {
 				++$start;
 			}
-			$return['excluded'] = $posts_to_exclude;
-			$return['start']    = $start;
-			if ( $posts->max_num_pages > 1 ) {
-				$return['more_posts'] = true;
-			} else {
-				$return['more_posts'] = false;
-			}
-			die( json_encode( $return ) );
-		} else {
-			die( json_encode( $return ) );
+			$map[ $sibling_id ] = $start;
+			++$start;
 		}
-	} //end ajax_save_post_order
+
+		return $map;
+	}
 
 	/**
 	 * Print styles to admin page
@@ -339,7 +391,7 @@ final class MN_Reorder {
 	 */
 	public function print_styles() {
 		MN_Reorder_Admin::get_instance()->enqueue_screen_assets();
-		wp_enqueue_style( 'reorderpages_style', REORDER_URL . '/css/admin.css', array( 'metronet-reorder-posts-settings' ), '20261021.2' );
+		wp_enqueue_style( 'reorderpages_style', REORDER_URL . '/css/admin.css', array( 'metronet-reorder-posts-settings' ), '20261022.3' );
 	}
 
 	/**
@@ -354,7 +406,7 @@ final class MN_Reorder {
 		wp_enqueue_script( 'jquery-ui-touch-punch', REORDER_URL . '/scripts/jquery.ui.touch-punch.js', array( 'jquery-ui-sortable' ), '0.2.3', true );
 		wp_register_script( 'reorder_nested', REORDER_URL . '/scripts/jquery.mjs.nestedSortable.js', array( 'jquery-ui-touch-punch' ), '2.0.1', true );
 
-		wp_enqueue_script( 'reorder_posts', REORDER_URL . '/scripts/sort.js', array( 'reorder_nested' ), '20261021', true );
+		wp_enqueue_script( 'reorder_posts', REORDER_URL . '/scripts/sort.js', array( 'reorder_nested' ), '20261022.4', true );
 		wp_localize_script(
 			'reorder_posts',
 			'reorder_posts',
@@ -377,7 +429,7 @@ final class MN_Reorder {
 	 */
 	public function enable_post_sort() {
 		$post_type = $this->post_type;
-		if ( 'post' != $post_type ) {
+		if ( 'post' !== $post_type ) {
 			$menu_location  = apply_filters( 'metronet_reorder_menu_location_' . $post_type, 'edit.php?post_type=' . $post_type, $post_type );
 			$post_type_args = get_post_type_object( $post_type );
 			// IF show_ui is false, add it to a hidden parent menu.
@@ -444,7 +496,7 @@ final class MN_Reorder {
 	 * @access public
 	 */
 	public function add_screen_option_save( $status, $option, $value ) {
-		if ( 'reorder_items_per_page' == $option ) {
+		if ( 'reorder_items_per_page' === $option ) {
 			return $value;
 		}
 
@@ -463,7 +515,16 @@ final class MN_Reorder {
 		$post_count_obj = wp_count_posts( $this->post_type );
 		$post_count     = isset( $post_count_obj->{$this->post_status} ) ? absint( $post_count_obj->{$this->post_status} ) : absint( $post_count_obj['publish'] );
 		if ( $post_count >= 1000 ) {
-			printf( '<div class="error"><p>%s</p></div>', sprintf( __( 'There are over %s posts found.  We do not recommend you sort these posts for performance reasons.', 'metronet_reorder_posts' ), number_format( $post_count ) ) );
+			printf(
+				'<div class="error"><p>%s</p></div>',
+				esc_html(
+					sprintf(
+						/* translators: %s: formatted post count */
+						__( 'There are over %s posts found.  We do not recommend you sort these posts for performance reasons.', 'metronet_reorder_posts' ),
+						number_format( $post_count )
+					)
+				)
+			);
 		}
 		?>
 		<div id="reorder-error"></div>
@@ -471,8 +532,8 @@ final class MN_Reorder {
 		<?php echo esc_html( $this->initial ); ?>
 		<?php
 		//Output non hierarchical posts
-		$page = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 0;
-		if ( $page == 0 || $page == 1 ) {
+		$page = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 0 === $page || 1 === $page ) {
 			$offset = 0;
 		} elseif ( $page > 1 ) {
 			$offset = $this->offset * ( $page - 1 );
@@ -492,11 +553,26 @@ final class MN_Reorder {
 		);
 		remove_filter( 'found_posts', array( $this, 'adjust_offset_pagination' ), 10, 2 );
 		if ( $post_query->have_posts() ) {
+			$children_by_parent = array();
+			if ( is_post_type_hierarchical( $this->post_type ) ) {
+				$frontier = wp_list_pluck( $post_query->posts, 'ID' );
+				while ( ! empty( $frontier ) ) {
+					$level_map = $this->get_children_by_parent( $frontier );
+					$frontier  = array();
+					foreach ( $level_map as $parent_id => $level_children ) {
+						$children_by_parent[ $parent_id ] = $level_children;
+						foreach ( $level_children as $child_post ) {
+							$frontier[] = absint( $child_post->ID );
+						}
+					}
+				}
+			}
+			echo '<div class="mn-reorder-list">';
 			echo '<ul id="post-list">';
 			while ( $post_query->have_posts() ) {
 				global $post;
 				$post_query->the_post();
-				$this->output_row( $post );
+				$this->output_row( $post, $children_by_parent );
 			}
 			echo '</ul><!-- #post-list -->';
 
@@ -507,13 +583,14 @@ final class MN_Reorder {
 				$pagination_args = array(
 					'base'    => $current_url,
 					'total'   => $post_query->max_num_pages,
-					'current' => ( $page == 0 ) ? 1 : $page,
+					'current' => ( 0 === $page ) ? 1 : $page,
 				);
-				echo paginate_links( $pagination_args );
+				echo wp_kses_post( paginate_links( $pagination_args ) );
 				echo '</div>';
 			}
+			echo '</div>';
 		} else {
-			printf( '<h3>%s</h3>	', esc_html__( 'There is nothing to sort at this time', 'metronet-reorder-posts' ) );
+			printf( '<h3>%s</h3>', esc_html__( 'There is nothing to sort at this time', 'metronet-reorder-posts' ) );
 		}
 		echo esc_html( $this->final );
 		$options = get_option( 'metronet-reorder-posts' );
@@ -538,7 +615,7 @@ if( ! empty( \$posts ) ) {
     echo '</ul>';
 }
 ";
-			printf( '<blockquote><pre><code>%s</code></pre></blockquote>', esc_html( print_r( $query, true ) ) );
+			printf( '<blockquote><pre><code>%s</code></pre></blockquote>', esc_html( $query ) );
 		endif;
 	}
 
@@ -549,63 +626,97 @@ if( ! empty( \$posts ) ) {
 		echo '<span class="mn-reorder-handle" aria-hidden="true"><span class="mn-reorder-handle__dots"></span></span>';
 	}
 
-	private function output_row( $post ) {
+	/**
+	 * Leaf arrow from the design system, inline after the title.
+	 * Points right when closed and rotates down when the children are open.
+	 */
+	private function expand_control() {
+		echo '<button type="button" class="mn-reorder-expand" aria-expanded="false">';
+		echo '<svg class="mn-reorder-expand__arrow" viewBox="0 0 36 32" width="16" height="16" aria-hidden="true" focusable="false">';
+		echo '<path fill="#c5d4b8" d="M6 5L30 16L6 16Z"/>';
+		echo '<path fill="#9aaf86" d="M6 16L30 16L6 27Z"/>';
+		echo '<path fill="none" stroke="#40352a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" d="M6 5L30 16L6 27Z"/>';
+		echo '</svg>';
+		echo '<span class="screen-reader-text">' . esc_html__( 'Expand', 'metronet-reorder-posts' ) . '</span>';
+		echo '</button>';
+	}
+
+	/**
+	 * Load children for one tree level and group at most 100 children per parent ID.
+	 *
+	 * @param int[] $parent_ids Parent post IDs on the current tree level.
+	 * @return array<int,WP_Post[]>
+	 */
+	private function get_children_by_parent( array $parent_ids ) {
+		if ( ! is_post_type_hierarchical( $this->post_type ) ) {
+			return array();
+		}
+
+		$parent_ids = array_values( array_unique( array_filter( array_map( 'absint', $parent_ids ) ) ) );
+		if ( empty( $parent_ids ) ) {
+			return array();
+		}
+
+		$query = new WP_Query(
+			array(
+				'post_type'              => $this->post_type,
+				'post_status'            => $this->post_status,
+				'posts_per_page'         => -1,
+				'post_parent__in'        => $parent_ids,
+				'orderby'                => 'menu_order',
+				'order'                  => $this->order,
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+
+		$by_parent = array();
+		foreach ( $query->posts as $child ) {
+			$parent_id = absint( $child->post_parent );
+			if ( ! isset( $by_parent[ $parent_id ] ) ) {
+				$by_parent[ $parent_id ] = array();
+			}
+			if ( count( $by_parent[ $parent_id ] ) < 100 ) {
+				$by_parent[ $parent_id ][] = $child;
+			}
+		}
+
+		return $by_parent;
+	}
+
+	/**
+	 * Output a single row and any prefetched children.
+	 *
+	 * @param WP_Post                $post_item          Post object to render.
+	 * @param array<int,WP_Post[]>   $children_by_parent Map of parent ID to child posts.
+	 */
+	private function output_row( $post_item, array $children_by_parent = array() ) {
 		global $post;
+		$post = $post_item; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		setup_postdata( $post );
+		$children = isset( $children_by_parent[ $post->ID ] ) ? $children_by_parent[ $post->ID ] : array();
 		?>
 		<li id="list_<?php the_id(); ?>" data-id="<?php the_id(); ?>" data-menu-order="<?php echo absint( $post->menu_order ); ?>" data-parent="<?php echo absint( $post->post_parent ); ?>" data-post-type="<?php echo esc_attr( $post->post_type ); ?>">
-			<?php
-			//Get the children
-			$args     = array(
-				'post_type'      => $this->post_type,
-				'post_status'    => $this->post_status,
-				'posts_per_page' => 100, /*hope there's never more than 100 children*/
-				'post_parent'    => get_the_ID(),
-				'orderby'        => 'menu_order',
-				'order'          => $this->order,
-			);
-			$children = new WP_Query( $args );
-			//Output parent title
-			if ( $children->have_posts() ) {
-				?>
-				<div class="row">
-					<div class="expand row-action">
-						<span class="dashicons dashicons-arrow-right"></span>
-					</div><!-- .row-action -->
-					<div class="row-content">
-						<?php $this->drag_handle(); ?>
-						<?php the_title(); ?><?php echo ( defined( 'REORDER_DEBUG' ) && REORDER_DEBUG == true ) ? ' - Menu Order:' . absint( $post->menu_order ) : ''; ?>
-					</div><!-- .row-content -->
-				</div><!-- .row -->
-				<?php
-			} else {
-				?>
-				<div class="row">
-					<?php
-					$is_hierarchical = true;
-					if ( is_post_type_hierarchical( $post->post_type ) ) {
-						?>
-						<div class="row-action">
-						</div><!-- .row-action -->
+			<div class="row">
+				<div class="row-content<?php echo is_post_type_hierarchical( $post->post_type ) ? '' : ' non-hierarchical'; ?>">
+					<?php $this->drag_handle(); ?>
+					<span class="mn-reorder-label">
+						<?php the_title(); ?><?php echo ( defined( 'REORDER_DEBUG' ) && true === (bool) REORDER_DEBUG ) ? ' - Menu Order:' . absint( $post->menu_order ) : ''; ?>
 						<?php
-					} else {
-						$is_hierarchical = false;
-					}
-					?>
-					<div class="row-content <?php echo $is_hierarchical ? '' : 'non-hierarchical'; ?>">
-						<?php $this->drag_handle(); ?>
-						<?php the_title(); ?><?php echo ( defined( 'REORDER_DEBUG' ) && REORDER_DEBUG == true ) ? ' - Menu Order:' . absint( $post->menu_order ) : ''; ?>
-					</div><!-- .row-content -->
-				</div><!-- .row -->
-				<?php
-			}
+						if ( ! empty( $children ) ) {
+							$this->expand_control();
+						}
+						?>
+					</span>
+				</div><!-- .row-content -->
+			</div><!-- .row -->
+			<?php
 
-			if ( $children->have_posts() ) {
+			if ( ! empty( $children ) ) {
 				echo '<ul class="children">';
-				while ( $children->have_posts() ) {
-					global $post;
-					$children->the_post();
-					$this->output_row( $post );
+				foreach ( $children as $child_post ) {
+					$this->output_row( $child_post, $children_by_parent );
 				}
 				echo '</ul>';
 			}
@@ -659,40 +770,45 @@ if( ! empty( \$posts ) ) {
 			</header>
 			<hr class="wp-header-end" />
 			<div class="mn-rf-settings__body">
-				<?php if ( $show_tabs ) : ?>
-					<div class="rf-tabs">
-						<nav class="rf-tabs__list" aria-label="<?php echo esc_attr( $this->heading ); ?>">
-							<?php foreach ( $tabs as $tab ) : ?>
+				<div class="mn-reorder-stage">
+					<div class="mn-reorder-main">
+						<?php if ( $show_tabs ) : ?>
+							<div class="rf-tabs">
+								<nav class="rf-tabs__list" aria-label="<?php echo esc_attr( $this->heading ); ?>">
+									<?php foreach ( $tabs as $tab ) : ?>
+										<?php
+										$tab_get   = isset( $tab['get'] ) ? (string) $tab['get'] : '';
+										$tab_url   = isset( $tab['url'] ) ? $tab['url'] : '';
+										$tab_label = isset( $tab['label'] ) ? $tab['label'] : '';
+										$current   = $active_tab === $tab_get;
+										?>
+										<a href="<?php echo esc_url( $tab_url ); ?>" class="rf-tabs__tab<?php echo $current ? ' is-current' : ''; ?>"<?php echo $current ? ' aria-current="page"' : ''; ?>>
+											<span class="rf-tabs__dot" aria-hidden="true"></span>
+											<?php echo esc_html( $tab_label ); ?>
+											<?php echo $admin->tab_shoulder(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG markup. ?>
+										</a>
+									<?php endforeach; ?>
+								</nav>
+								<div class="rf-tabs__panel">
+									<?php
+									if ( $do_action ) {
+										do_action( $do_action );
+									}
+									?>
+								</div>
+							</div>
+						<?php else : ?>
+							<div class="rf-tabs__panel">
 								<?php
-								$tab_get   = isset( $tab['get'] ) ? (string) $tab['get'] : '';
-								$tab_url   = isset( $tab['url'] ) ? $tab['url'] : '';
-								$tab_label = isset( $tab['label'] ) ? $tab['label'] : '';
-								$current   = $active_tab === $tab_get;
+								if ( $do_action ) {
+									do_action( $do_action );
+								}
 								?>
-								<a href="<?php echo esc_url( $tab_url ); ?>" class="rf-tabs__tab<?php echo $current ? ' is-current' : ''; ?>"<?php echo $current ? ' aria-current="page"' : ''; ?>>
-									<span class="rf-tabs__dot" aria-hidden="true"></span>
-									<?php echo esc_html( $tab_label ); ?>
-									<?php echo $admin->tab_shoulder(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG markup. ?>
-								</a>
-							<?php endforeach; ?>
-						</nav>
-						<div class="rf-tabs__panel">
-							<?php
-							if ( $do_action ) {
-								do_action( $do_action );
-							}
-							?>
-						</div>
+							</div>
+						<?php endif; ?>
 					</div>
-				<?php else : ?>
-					<div class="rf-tabs__panel">
-						<?php
-						if ( $do_action ) {
-							do_action( $do_action );
-						}
-						?>
-					</div>
-				<?php endif; ?>
+					<?php $admin->render_updates(); ?>
+				</div>
 			</div>
 			<?php $admin->render_footer(); ?>
 		</div>
