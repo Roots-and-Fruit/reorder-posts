@@ -5,7 +5,7 @@ Plugin URL: https://wordpress.org/plugins/metronet-reorder-posts/
 Requires at Least: 6.5
 Tested up to: 7.1
 Tags: reorder, reorder posts, menu order, ordering, re-order
-Stable tag: 2.6.1
+Stable tag: trunk
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
