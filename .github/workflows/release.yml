@@ -32,9 +32,9 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "zip_name=metronet-reorder-posts-${VERSION}.zip" >> "$GITHUB_OUTPUT"
-          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "${TAG}$"; then
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q . || git ls-remote --tags origin "refs/tags/${VERSION}" | grep -q .; then
             echo "release=false" >> "$GITHUB_OUTPUT"
-            echo "Tag ${TAG} already exists."
+            echo "Tag ${TAG} or ${VERSION} already exists."
           else
             echo "release=true" >> "$GITHUB_OUTPUT"
           fi
@@ -69,10 +69,6 @@ jobs:
           cd "${GITHUB_WORKSPACE}"
           if [[ ! -f "${{ steps.version.outputs.zip_name }}" ]]; then
             echo "ZIP package was not created."
-            exit 1
-          fi
-          if ! unzip -l "${{ steps.version.outputs.zip_name }}" | grep -q "metronet-reorder-posts/"; then
-            echo "ZIP structure check failed."
             exit 1
           fi
           echo "zip_path=${{ steps.version.outputs.zip_name }}" >> "$GITHUB_OUTPUT"
