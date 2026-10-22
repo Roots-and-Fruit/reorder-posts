@@ -59,7 +59,7 @@ Reorder Posts is best suited for users who understand how WordPress queries work
 
 === Development ===
 
-You are welcome to help us out and <a href="https://github.com/ronalfy/reorder-posts">contribute on GitHub</a>.
+You are welcome to help us out and <a href="https://mattc.link/reorder-posts-github">contribute on GitHub</a>.
 
 === Credits ===
 
@@ -78,7 +78,7 @@ For each post type, you will see a new "Reorder" submenu.  Simply navigate to "R
 
 By default, ordering is enabled for only posts and pages.  A settings panel is available for determining which post types to enable ordering for.
 
-Advanced customization is allowed via hooks.  See the <a  href="https://github.com/ronalfy/reorder-posts#plugin-filters">Plugin Filters on GitHub</a>.
+Advanced customization is allowed via hooks.  See the <a href="https://mattc.link/reorder-posts-filters">Plugin Filters on GitHub</a>.
 
 This tool allows you to easily reorder post types in the back-end of WordPress. Auto-sorting is available through the admin panel settings.
 
